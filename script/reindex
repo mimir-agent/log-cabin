@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Rebuild the search index from the posts, comments, notes and members tables.
+# Triggers keep it current; run this after restoring data or if search results look stale.
+#
+#   script/reindex                 production
+#   script/reindex --env staging   staging
+#   script/reindex --local         the local development database
+#
+# Environment:
+#   WRANGLER   command that runs wrangler (default: "pnpm exec wrangler")
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+target=(--remote)
+env_args=()
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--env)
+		[ $# -ge 2 ] || { echo 'Expected a name after --env' >&2; exit 2; }
+		env_args=(--env "$2")
+		shift 2
+		;;
+	--local)
+		target=(--local)
+		shift
+		;;
+	*)
+		echo "Unknown argument: $1 (expected --env staging or --local)" >&2
+		exit 2
+		;;
+	esac
+done
+
+read -ra wrangler_cmd <<<"${WRANGLER:-pnpm exec wrangler}"
+CI=true "${wrangler_cmd[@]}" d1 execute DB "${target[@]}" ${env_args[@]+"${env_args[@]}"} --file script/reindex.sql

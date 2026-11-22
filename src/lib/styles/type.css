@@ -1,0 +1,104 @@
+/*
+ * Type. Inter (OFL-1.1, licence beside the font files) for everything: interface and prose.
+ *
+ * UI text is 14px (--text-sm) almost everywhere. Hierarchy comes from colour (--hue-z*-muted)
+ * and placement first, size second. Bigger sizes are for what names a screen. Weight stays
+ * regular; medium marks names (people, posts) in lists, semibold the page title.
+ */
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('./fonts/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: italic;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('./fonts/InterVariable-Italic.woff2') format('woff2');
+}
+
+@layer token {
+	:root {
+		--ff-ui: 'Inter', var(--ff-system);
+		--ff-sans: var(--ff-ui);
+		--ff-content: var(--ff-ui);
+		--ff-heading: var(--ff-ui);
+
+		/* Roles on top of suede's --text-* scale. Use the role, not the step. */
+		--type-caption: var(--text-xs); /* 12: timestamps, counts, metadata */
+		--type-body: var(--text-sm); /* 14: the interface */
+		--type-prose: 0.9375rem; /* 15: post, comment and note bodies. Between suede's 14 and 16:
+		                            14 is too small to read paragraphs in, 16 too loose for a feed. */
+		--type-title: var(--text-xl); /* 20: the page title */
+		--type-display: var(--text-3xl); /* 24 → 32: a post's own title on its page */
+		--type-control: var(--type-body); /* 14: text typed into fields and editors */
+	}
+
+	/* iOS Safari zooms the page into any focused field under 16px. */
+	@media (pointer: coarse), (max-width: 40rem) {
+		:root {
+			--type-control: var(--text-md); /* 16 */
+		}
+	}
+}
+
+@layer layout {
+	/* App-wide text defaults. Suede's body is a fluid reading size; an app wants a fixed one. */
+	body {
+		font-family: var(--ff-ui);
+		font-size: var(--type-body);
+		line-height: var(--leading-loose);
+		/* Inter: disambiguated 1/l/I and open digits, so ids, counts and emails read cleanly. */
+		font-feature-settings:
+			'cv05' 1,
+			'cv08' 1;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+	}
+
+	:is(h1, h2, h3, h4, h5, h6) {
+		font-family: var(--ff-ui);
+		text-wrap: balance;
+	}
+
+	/* Numbers that line up: counts, times, columns. */
+	time,
+	.u\:tabular {
+		font-variant-numeric: tabular-nums;
+	}
+
+	code,
+	kbd,
+	samp,
+	pre {
+		font-family: var(--ff-mono);
+		font-size: 0.9em;
+	}
+
+	::selection {
+		background-color: var(--hue-selection);
+	}
+}
+
+/* Titles. The page header names the screen at interface size; these are for titles inside the
+   content: a post's or note's own title (display), a settings section (title). */
+@layer utility {
+	.u\:type-title {
+		font-size: var(--type-title);
+		font-weight: var(--fw-semibold);
+		line-height: var(--leading-tight);
+		letter-spacing: -0.01em;
+	}
+
+	.u\:type-display {
+		font-size: var(--type-display);
+		font-weight: var(--fw-semibold);
+		line-height: var(--leading-tight);
+		letter-spacing: -0.02em;
+	}
+}

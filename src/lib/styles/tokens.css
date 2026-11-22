@@ -1,0 +1,353 @@
+/*
+ * Campfire's tokens. They sit in the `token` layer, after suede-css, and give suede's semantic
+ * tokens Campfire's values, or add the roles suede has no name for.
+ *
+ * The values follow Campsite's design (packages/ui/tailwind.config.js and global.css in
+ * Campsite, CC BY-NC 4.0; see docs/design/campsite-reference/specs/primitives.md): neutral
+ * greys with no tint, ink for the primary action, hairline borders and layered soft shadows.
+ *
+ * Colour scheme: `prefers-color-scheme` by default. `data-theme="light"` or `"dark"` on <html>
+ * (or any subtree) forces one; suede-css sets `color-scheme` from it and every `light-dark()`
+ * below follows. The roles are declared again on each `data-theme` subtree: declared only on
+ * :root, they keep the page's scheme inside it.
+ */
+@layer token {
+	:root,
+	[data-theme] {
+		/* Campsite's grey scale. Tailwind's neutral, with a lighter 50 and three extra steps
+		   (150, 750, 850) that the surfaces need. Suede's neutral has no 150/750/850, so this is
+		   its own scale; use the roles below, not the steps. */
+		--hue-gray-50: #fcfcfc;
+		--hue-gray-100: #f5f5f5;
+		--hue-gray-150: #f0f0f0;
+		--hue-gray-200: #e5e5e5;
+		--hue-gray-300: #d4d4d4;
+		--hue-gray-400: #a3a3a3;
+		--hue-gray-500: #737373;
+		--hue-gray-600: #525252;
+		--hue-gray-700: #404040;
+		--hue-gray-750: #313131;
+		--hue-gray-800: #262626;
+		--hue-gray-850: #1e1e1e;
+		--hue-gray-900: #171717;
+		--hue-gray-950: #0d0d0d;
+
+		/* Surfaces. Each set has the same shape: bg, fg, muted, border.
+		   z0  the main column and the sidebar (Campsite's bg-primary)
+		   z1  one step back: wells, the composer, inputs at rest (bg-secondary)
+		   z2  raised things: popovers, menus, dialogs (bg-elevated) */
+		--hue-z0-bg: light-dark(var(--hue-white), var(--hue-gray-950));
+		--hue-z0-fg: light-dark(var(--hue-gray-900), var(--hue-gray-100));
+		/* Hairlines: a change of tone, not a line. Translucent, so they read on any surface. */
+		--hue-z0-border: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.12));
+		/* Tertiary text: metadata, previews, inactive nav. 4.7:1 on white, 7.8:1 on gray-950. */
+		--hue-z0-muted: light-dark(var(--hue-gray-500), var(--hue-gray-400));
+		--hue-z1-muted: var(--hue-z0-muted);
+		--hue-z2-muted: var(--hue-z0-muted);
+
+		--hue-z1-bg: light-dark(var(--hue-gray-50), var(--hue-gray-900));
+		--hue-z1-fg: var(--hue-z0-fg);
+		--hue-z1-border: var(--hue-z0-border);
+
+		--hue-z2-bg: light-dark(var(--hue-white), var(--hue-gray-850));
+		--hue-z2-fg: var(--hue-z0-fg);
+		--hue-z2-border: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.1));
+
+		/* The text ladder. Primary is z0-fg, tertiary is z0-muted. Secondary is body copy that
+		   isn't the point (previews in the post page, comment bodies' quotes). Quaternary is for
+		   marks and separators only, never for text someone has to read: 2.5:1. */
+		--hue-text-secondary: light-dark(var(--hue-gray-600), var(--hue-gray-300));
+		--hue-text-quaternary: light-dark(var(--hue-gray-400), var(--hue-gray-500));
+
+		/* Quieter hairlines inside a surface: between comments, between rows of a card. */
+		--hue-border-secondary: light-dark(rgb(0 0 0 / 0.07), rgb(255 255 255 / 0.08));
+		--hue-border-tertiary: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.06));
+
+		/* Interaction washes. Hover is a breath (Campsite's black/4%); selected and the open
+		   state are an opaque grey fill (bg-quaternary), never a colour. */
+		--hue-hover: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.08));
+		--hue-pressed: light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.12));
+		--hue-selected: light-dark(var(--hue-gray-150), var(--hue-gray-750));
+		--hue-fill: light-dark(rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.08)); /* flat buttons, chips */
+
+		/* The primary action is ink: near-black in light mode, near-white in dark. Campfire's
+		   colour comes from people and projects, not from the chrome. */
+		--hue-accent: light-dark(var(--hue-gray-800), var(--hue-gray-100));
+		--hue-accent-hover: light-dark(var(--hue-gray-750), var(--hue-white));
+		--hue-accent-fg: light-dark(var(--hue-gray-50), var(--hue-gray-900));
+		/* Something of yours: your reaction, the comment you were linked to. */
+		--hue-accent-subtle: light-dark(
+			color-mix(in srgb, var(--hue-blue-100) 70%, transparent),
+			color-mix(in srgb, var(--hue-blue-500) 22%, transparent)
+		);
+		--hue-accent-subtle-fg: light-dark(var(--hue-blue-700), var(--hue-blue-300));
+		/* Unread is blue: the dot, the count on a row with new comments. */
+		--hue-unread: #3b82f6;
+		--hue-unread-fg: var(--hue-white);
+		/* Chat bubbles: someone else's in the selected grey, yours in blue. Campsite uses blue-500,
+		   which gives white text 3.7:1; blue-600 reads the same and passes AA at 5.2:1. */
+		--hue-bubble: var(--hue-selected);
+		--hue-bubble-mine: #2563eb;
+		--hue-bubble-mine-fg: var(--hue-white);
+		/* Code inside your own bubble: the bubble blue 25% darker, so its white text keeps 7.9:1
+		   (the bubble itself gives 5.2:1) in light and dark alike, as the bubble's blue is the same. */
+		--hue-bubble-mine-code: color-mix(in srgb, black 25%, var(--hue-bubble-mine));
+		/* Search matches and quoted highlights. */
+		--hue-highlight: rgb(234 179 8 / 0.2);
+		--hue-highlight-fg: light-dark(#713f12, #fef9c3);
+
+		/* Status. Each has one job: say what happened. Text-safe (4.5:1 or better) on z0 in both schemes. */
+		--hue-danger: light-dark(var(--hue-red-600), var(--hue-red-400));
+		--hue-danger-solid: #ef4444; /* destructive buttons and highlighted destructive menu items */
+		--hue-danger-subtle: light-dark(
+			var(--hue-red-100),
+			color-mix(in oklch, var(--hue-red-400) 14%, transparent)
+		);
+		--hue-success: light-dark(var(--hue-green-700), var(--hue-green-400));
+		--hue-warning: light-dark(var(--hue-amber-700), var(--hue-amber-300));
+
+		/* Focus is blue, separate from the ink accent, so focus is never mistaken for selection. */
+		--hue-focus-ring: #3b82f6;
+
+		/* Writing surfaces show focus as the caret, in the accent blue, and selected text in a blue wash. */
+		--hue-caret: light-dark(var(--hue-blue-600), var(--hue-blue-400));
+		--hue-selection: light-dark(
+			color-mix(in srgb, var(--hue-blue-500) 24%, transparent),
+			color-mix(in srgb, var(--hue-blue-400) 34%, transparent)
+		);
+		/* The comment box's edge while it has focus: its hairline one step darker, never a ring. */
+		--hue-field-edge-focus: light-dark(rgb(0 0 0 / 0.28), rgb(255 255 255 / 0.3));
+
+		/* Live states. --hue-live is a recording, or a call in progress: the red dot people read
+		   as "on air". --hue-online and --hue-speaking are marks, not text. */
+		--hue-live: light-dark(var(--hue-red-600), var(--hue-red-400));
+		--hue-live-subtle: var(--hue-danger-subtle);
+		--hue-online: #22c55e;
+		--hue-speaking: #5ec269;
+
+		/* Calls are Campsite's green-500: the page icon, a call happening now. A microphone or
+		   camera that's on fills with green-600 instead, so the white glyph on it keeps 3:1.
+		   The subtle one is the round behind a call's mark in a row. */
+		--hue-call: #22c55e;
+		--hue-call-solid: #16a34a;
+		--hue-call-solid-hover: #15803d;
+		--hue-call-subtle: light-dark(#f0fdf4, rgb(20 83 45 / 0.5));
+
+		/* Menus (Campsite's DropdownMenu): a grey edge rather than a hairline of black, the
+		   highlighted row a 5% wash, and lines between groups that are a step of grey. A
+		   destructive row fills red only when highlighted; red-600, not Campsite's red-500, so
+		   its white label keeps 4.5:1. */
+		--hue-menu-border: light-dark(rgb(163 163 163 / 0.4), var(--hue-gray-750));
+		--hue-menu-highlight: light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.1));
+		--hue-menu-separator: light-dark(var(--hue-gray-100), var(--hue-gray-900));
+		--hue-danger-fill: #dc2626;
+		/* A key in a shortcut chip. */
+		--hue-kbd-bg: light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.1));
+		/* A settings section's card: white, and one step up from the page in dark. */
+		--hue-section-bg: light-dark(var(--hue-white), var(--hue-gray-800));
+		/* A text field at rest (Campsite's TextField: bg-primary, dark bg-quaternary). */
+		--hue-field-bg: light-dark(var(--hue-white), var(--hue-gray-750));
+		/* A switch: grey off, blue on. */
+		--hue-switch-off: var(--hue-gray-500);
+		--hue-switch-on: #3b82f6;
+
+		/* Behind modal dialogs. */
+		--hue-backdrop: light-dark(rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.6));
+		/* Behind the command menu: barely there in light, so the page stays in view. */
+		--hue-backdrop-faint: light-dark(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.6));
+		/* Behind a menu that opens as a sheet from the bottom on a phone. */
+		--hue-backdrop-sheet: rgb(0 0 0 / 0.5);
+
+		/* Where video and full-size images sit: the call stage, the lightbox. Those surfaces also
+		   set data-theme="dark" so their controls take the dark tokens. */
+		--hue-media-bg: var(--hue-gray-950);
+
+		/* Shadows. Campsite's, layered and soft; in dark mode an inset highlight and a dark
+		   outline carry the edge instead. light-dark() takes colours only, so the dark set of
+		   each shadow is below, in the dark-scheme blocks. */
+		--shadow-color: light-dark(rgb(0 0 0 / 0.05), rgb(0 0 0 / 0.16));
+		--shadow-card:
+			0 3px 6px -3px var(--shadow-color), 0 2px 4px -2px var(--shadow-color),
+			0 1px 2px -1px var(--shadow-color), 0 1px 1px -1px var(--shadow-color),
+			0 1px 0 -1px var(--shadow-color);
+		--shadow-button-light:
+			0 1px 1px -1px rgb(0 0 0 / 0.08), 0 2px 2px -1px rgb(0 0 0 / 0.08),
+			0 0 0 1px rgb(0 0 0 / 0.06), inset 0 1px 0 #fff, inset 0 1px 2px 1px #fff,
+			inset 0 1px 2px rgb(0 0 0 / 0.06);
+		--shadow-button-dark:
+			0 0 0 0.5px rgb(0 0 0 / 0.4), 0 1px 1px -1px rgb(0 0 0 / 0.12),
+			0 2px 2px -1px rgb(0 0 0 / 0.12), inset 0 0.5px 0 rgb(255 255 255 / 0.06),
+			inset 0 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -6px 12px -4px rgb(0 0 0 / 0.16);
+		--shadow-button-primary-dark:
+			0 1px 1px -1px rgb(0 0 0 / 0.08), 0 2px 2px -1px rgb(0 0 0 / 0.08),
+			0 0 0 1px rgb(0 0 0 / 0.06), inset 0 1px 0 #fff, inset 0 0 2px 1px #fff,
+			inset 0 1px 2px rgb(0 0 0 / 0.06), inset 0 -4px 8px -4px rgb(0 0 0 / 0.06);
+		--shadow-popover-light:
+			0 0 3.6px rgb(0 0 0 / 0.04), 0 0 10px rgb(0 0 0 / 0.04), 0 0 24.1px rgb(0 0 0 / 0.05),
+			0 0 80px rgb(0 0 0 / 0.08);
+		--shadow-popover-dark:
+			0 0 4px rgb(0 0 0 / 0.08), 0 0 10px rgb(0 0 0 / 0.12), 0 0 24px rgb(0 0 0 / 0.16),
+			0 0 80px rgb(0 0 0 / 0.2);
+		/* Menus sit closer to the page than popovers: Tailwind's shadow-md, and in dark a black
+		   outline with one soft drop. */
+		--shadow-menu-light: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+		--shadow-menu-dark: 0 0 0 0.5px rgb(0 0 0), 0 4px 4px rgb(0 0 0 / 0.24);
+		/* A selected row in dark mode is a raised chip rather than a wash. */
+		--shadow-select-item-dark:
+			inset 0 1px 0 rgb(255 255 255 / 0.02), inset 0 0 0 1px rgb(255 255 255 / 0.02),
+			0 1px 2px rgb(0 0 0 / 0.12), 0 2px 4px rgb(0 0 0 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.24);
+
+		/* The roles. Light by default. */
+		--shadow-button: var(--shadow-button-light);
+		--shadow-button-primary: none;
+		--shadow-popover: var(--shadow-popover-light);
+		--shadow-menu: var(--shadow-menu-light);
+		--shadow-select-item: none;
+		--elevation-popover: var(--shadow-popover), 0 0 0 var(--border-w-hairline) var(--hue-z2-border);
+		--elevation-dialog: var(--shadow-popover), 0 0 0 var(--border-w-hairline) var(--hue-z2-border);
+
+		/* Hairline borders. Half a pixel: on a 2x screen it's one device pixel. */
+		--border-w-hairline: 0.5px;
+
+		/* Radius roles. Controls and rows 6px, floating surfaces and cards 8px. */
+		--radius-control: 0.375rem;
+		--radius-surface: 0.5rem;
+		--radius-card: 0.75rem;
+
+		/* Sizes for the shell and controls. */
+		--control-h-xs: 1.625rem; /* 26: small buttons, chips */
+		--control-h-sm: 1.875rem; /* 30: buttons, sidebar rows, toolbar buttons */
+		--control-h-md: 2rem; /* 32: inputs and selects */
+		--control-h-lg: 2.5rem; /* 40: large buttons, touch-first rows */
+		--sidebar-w: 15rem; /* 240 */
+		--rail-w: 15rem; /* 240: the people rail on Home */
+		--header-h: calc(3.5rem + env(safe-area-inset-top)); /* 56 under the status bar: the titlebar */
+		--tab-bar-h: 3.5rem; /* 56: the phone's tab bar in AppShell, a 44px tap target in 6px padding twice */
+		--tap-min: 2.75rem; /* 44: the smallest target a finger can hit */
+		/* A bottom edge's padding: clear of the home indicator, or the floor where there is none. */
+		--safe-bottom: max(env(safe-area-inset-bottom), 8px);
+		/* Reading columns. The feed is 700px, a post or note 756px. */
+		--measure: 43.75rem;
+		--measure-post: 47.25rem;
+
+		/* Motion. Colour and opacity change in 100ms; nothing else moves unless it explains
+		   where something came from. No frequent action animates for longer than --motion-slow,
+		   and nothing that is content waits on an animation. */
+		--motion-instant: 0ms; /* press-in: feedback lands in the input frame */
+		--motion-exit: 75ms; /* a toast leaving */
+		--motion-fast: 100ms; /* hover, colour, menus and toasts entering */
+		--motion-base: 150ms; /* dialogs, backdrops */
+		--motion-slow: 200ms; /* drawers, a disclosure arrow turning */
+		--motion-ease: cubic-bezier(0.4, 0, 0.2, 1); /* colour */
+		--motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entering, moving into place */
+		--motion-ease-in: cubic-bezier(0.4, 0, 1, 1); /* leaving, with --motion-exit */
+		/* Waits before a progress sign shows, so fast answers never flash one. */
+		--motion-delay-progress: 150ms; /* the navigation bar, a spinner in a button */
+		--motion-delay-pending: 2000ms; /* "still sending" under a message */
+		--press-scale: 0.98; /* a button held down */
+	}
+
+	/* Hover washes only where there is a pointer that hovers; a touchscreen would leave them stuck on. */
+	@media (hover: none) and (pointer: coarse) {
+		:root,
+		[data-theme] {
+			--hue-hover: transparent;
+		}
+	}
+
+	/* The dark set of the shadow roles, for both ways a subtree can be dark. Keep the two
+	   blocks the same. */
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme='light']) {
+			--shadow-button: var(--shadow-button-dark);
+			--shadow-button-primary: var(--shadow-button-primary-dark);
+			--shadow-popover: var(--shadow-popover-dark);
+			--shadow-menu: var(--shadow-menu-dark);
+			--shadow-select-item: var(--shadow-select-item-dark);
+		}
+	}
+	[data-theme='dark'] {
+		--shadow-button: var(--shadow-button-dark);
+		--shadow-button-primary: var(--shadow-button-primary-dark);
+		--shadow-popover: var(--shadow-popover-dark);
+		--shadow-menu: var(--shadow-menu-dark);
+		--shadow-select-item: var(--shadow-select-item-dark);
+	}
+	[data-theme='light'] {
+		--shadow-button: var(--shadow-button-light);
+		--shadow-button-primary: none;
+		--shadow-popover: var(--shadow-popover-light);
+		--shadow-menu: var(--shadow-menu-light);
+		--shadow-select-item: none;
+	}
+
+	/* A person's colour: their live cursor in a note, their caret label, their pin on an image.
+	   Set data-hue="<scale>" on the element (the server picks the scale per person) and use
+	   --person (the mark), --person-fg (text on it) and --person-subtle (their selection).
+	   Steps are picked so --person-fg on --person passes 4.5:1 in both schemes. */
+	[data-hue] {
+		--person: light-dark(var(--person-700), var(--person-400));
+		--person-fg: light-dark(var(--hue-white), var(--hue-stone-950));
+		--person-subtle: color-mix(in oklch, var(--person) 22%, transparent);
+	}
+	[data-hue='orange'] {
+		--person-700: var(--hue-orange-700);
+		--person-400: var(--hue-orange-400);
+	}
+	[data-hue='amber'] {
+		--person-700: var(--hue-amber-700);
+		--person-400: var(--hue-amber-400);
+	}
+	[data-hue='lime'] {
+		--person-700: var(--hue-lime-700);
+		--person-400: var(--hue-lime-400);
+	}
+	[data-hue='green'] {
+		--person-700: var(--hue-green-700);
+		--person-400: var(--hue-green-400);
+	}
+	[data-hue='emerald'] {
+		--person-700: var(--hue-emerald-700);
+		--person-400: var(--hue-emerald-400);
+	}
+	[data-hue='teal'] {
+		--person-700: var(--hue-teal-700);
+		--person-400: var(--hue-teal-400);
+	}
+	[data-hue='cyan'] {
+		--person-700: var(--hue-cyan-700);
+		--person-400: var(--hue-cyan-400);
+	}
+	[data-hue='blue'] {
+		--person-700: var(--hue-blue-700);
+		--person-400: var(--hue-blue-400);
+	}
+	[data-hue='indigo'] {
+		--person-700: var(--hue-indigo-700);
+		--person-400: var(--hue-indigo-400);
+	}
+	[data-hue='violet'] {
+		--person-700: var(--hue-violet-700);
+		--person-400: var(--hue-violet-400);
+	}
+	[data-hue='purple'] {
+		--person-700: var(--hue-purple-700);
+		--person-400: var(--hue-purple-400);
+	}
+	[data-hue='pink'] {
+		--person-700: var(--hue-pink-700);
+		--person-400: var(--hue-pink-400);
+	}
+	[data-hue='rose'] {
+		--person-700: var(--hue-rose-700);
+		--person-400: var(--hue-rose-400);
+	}
+	[data-hue='red'] {
+		--person-700: var(--hue-red-700);
+		--person-400: var(--hue-red-400);
+	}
+	[data-hue='stone'] {
+		--person-700: var(--hue-stone-700);
+		--person-400: var(--hue-stone-400);
+	}
+}

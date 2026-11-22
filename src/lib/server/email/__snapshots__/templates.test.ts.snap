@@ -1,0 +1,175 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`emails > invite has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>You’re invited to Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">Ada invited you to join Acme.</td></tr>
+<tr><td style="padding:0 0 16px;"><a href="https://campfire.test/invite/t3" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Accept the invitation</a></td></tr>
+<tr><td style="padding:0 0 16px;font-size:13px;line-height:18px;color:#737373;">The link expires in 7 days. If you weren’t expecting this invitation, you can ignore this email.</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > invite has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+Ada invited you to join Acme.
+
+Accept the invitation: https://campfire.test/invite/t3
+
+The link expires in 7 days. If you weren’t expecting this invitation, you can ignore this email."
+`;
+
+exports[`emails > joinApproved has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>You’ve joined Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">An admin approved your request to join Acme.</td></tr>
+<tr><td style="padding:0 0 16px;"><a href="https://campfire.test/login" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Sign in</a></td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > joinApproved has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+An admin approved your request to join Acme.
+
+Sign in: https://campfire.test/login"
+`;
+
+exports[`emails > joinDenied has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Your request to join Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">An admin of Acme denied your request to join. If you think that’s a mistake, ask someone there for an invitation.</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > joinDenied has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+An admin of Acme denied your request to join. If you think that’s a mistake, ask someone there for an invitation."
+`;
+
+exports[`emails > joinRequest has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Bo asked to join Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">Bo (bo@example.com) asked to join Acme.</td></tr>
+<tr><td style="padding:0 0 16px;"><a href="https://campfire.test/members?view=requests" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Approve or deny</a></td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > joinRequest has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+Bo (bo@example.com) asked to join Acme.
+
+Approve or deny: https://campfire.test/members?view=requests"
+`;
+
+exports[`emails > reset has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Reset your password for Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">Use this link to choose a new password for Acme.</td></tr>
+<tr><td style="padding:0 0 16px;"><a href="https://campfire.test/login/reset?token=t2" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Choose a new password</a></td></tr>
+<tr><td style="padding:0 0 16px;font-size:13px;line-height:18px;color:#737373;">The link works once and expires in 30 minutes. Choosing a new password signs you out on every device. If you didn’t ask for this, you can ignore this email; your password hasn’t changed.</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > reset has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+Use this link to choose a new password for Acme.
+
+Choose a new password: https://campfire.test/login/reset?token=t2
+
+The link works once and expires in 30 minutes. Choosing a new password signs you out on every device. If you didn’t ask for this, you can ignore this email; your password hasn’t changed."
+`;
+
+exports[`emails > signIn has a plain-text part and an HTML part, each matching its snapshot > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Your sign-in link for Acme</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Acme</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">Use this link to sign in to Acme.</td></tr>
+<tr><td style="padding:0 0 16px;"><a href="https://campfire.test/login/verify?token=t1" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Sign in</a></td></tr>
+<tr><td style="padding:0 0 16px;font-size:13px;line-height:18px;color:#737373;">The link works once and expires in 15 minutes. If you didn’t ask for it, you can ignore this email.</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`emails > signIn has a plain-text part and an HTML part, each matching its snapshot > text 1`] = `
+"Acme
+
+Use this link to sign in to Acme.
+
+Sign in: https://campfire.test/login/verify?token=t1
+
+The link works once and expires in 15 minutes. If you didn’t ask for it, you can ignore this email."
+`;

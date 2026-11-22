@@ -1,0 +1,21 @@
+{
+	// The beta database's backup Worker. Deploy: wrangler deploy --config script/backup/wrangler.jsonc
+	// (script/deploy --env beta does it). The database_id is filled in from the account like the app's.
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "campfire-beta-backup",
+	"main": "worker.mjs",
+	"compatibility_date": "2026-05-07",
+	"workers_dev": true,
+	"preview_urls": false,
+	"observability": { "enabled": true },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "campfire-beta",
+			"database_id": "00000000-0000-0000-0000-000000000000"
+		}
+	],
+	"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire-beta-backups" }],
+	// 10:30 UTC, a quiet hour for a small group.
+	"triggers": { "crons": ["30 10 * * *"] }
+}

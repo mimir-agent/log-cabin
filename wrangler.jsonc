@@ -1,0 +1,172 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "campfire",
+	"compatibility_date": "2026-05-07",
+	"compatibility_flags": ["nodejs_als"],
+	// One Worker: SvelteKit's fetch plus queue(), scheduled() and the RealtimeHub class.
+	"main": "src/worker.ts",
+	"alias": { "sveltekit-worker": "./.svelte-kit/cloudflare/_worker.js" },
+	// Note thumbnails' fonts are imported as ArrayBuffers (src/lib/server/notes/thumbnail-files.ts).
+	// Their .wasm imports need no rule: wrangler compiles .wasm to a module by default.
+	"rules": [{ "type": "Data", "globs": ["**/*.woff"] }],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": true,
+	"preview_urls": true,
+	// Logs keep request URLs without their query: the recording sink's URL carries its token.
+	// env.staging and env.test inherit this.
+	"observability": { "enabled": true, "redact_query_string": true },
+	// script/deploy replaces the database_id below with the real one.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "campfire",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire" }],
+	"queues": {
+		"producers": [{ "binding": "JOBS", "queue": "campfire-jobs" }],
+		"consumers": [{ "queue": "campfire-jobs", "max_batch_size": 10, "max_retries": 3 }]
+	},
+	"durable_objects": {
+		"bindings": [
+			{ "name": "REALTIME", "class_name": "RealtimeHub" },
+			{ "name": "RECORDING_SINK", "class_name": "RecordingSink" }
+		]
+	},
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
+		{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
+	],
+	// Workers AI writes post and note summaries. Without this line the Summarize button stays hidden.
+	"ai": { "binding": "AI" },
+	// Optional bindings. Uncomment to use them:
+	// IMAGES needs Cloudflare Images on the account.
+	// "images": { "binding": "IMAGES" },
+	// EMAIL needs Email Routing on a zone you own; then set EMAIL_TRANSPORT to "cloudflare".
+	// "send_email": [{ "name": "EMAIL" }],
+	"triggers": {
+		// Every 5 minutes: the job sweeper. Every hour: digests for users whose local hour it is.
+		"crons": ["*/5 * * * *", "0 * * * *"]
+	},
+	"vars": {
+		"EMAIL_TRANSPORT": "log",
+		"EMAIL_FROM": "Campfire <campfire@example.com>",
+		"ATTACHMENT_MAX_MB": "25"
+	},
+	"env": {
+		"staging": {
+			"name": "campfire-staging",
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "campfire-staging",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire-staging" }],
+			"queues": {
+				"producers": [{ "binding": "JOBS", "queue": "campfire-staging-jobs" }],
+				"consumers": [{ "queue": "campfire-staging-jobs", "max_batch_size": 10, "max_retries": 3 }]
+			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "REALTIME", "class_name": "RealtimeHub" },
+					{ "name": "RECORDING_SINK", "class_name": "RecordingSink" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
+				{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
+			],
+			"ai": { "binding": "AI" },
+			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
+			"vars": {
+				"EMAIL_TRANSPORT": "log",
+				"EMAIL_FROM": "Campfire Staging <campfire@example.com>",
+				"ATTACHMENT_MAX_MB": "25"
+			}
+		},
+		// A separate deployment for a small group of real people. It takes every merge, like staging, from the
+		// same build. It has its own database, bucket, queue and secrets, and it is reached only on its own
+		// address: no workers.dev URL. Mail is logged.
+		"beta": {
+			"name": "campfire-beta",
+			"workers_dev": false,
+			"preview_urls": false,
+			"routes": [{ "pattern": "cabin.yaaia.id", "custom_domain": true }],
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "campfire-beta",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire-beta" }],
+			"queues": {
+				"producers": [{ "binding": "JOBS", "queue": "campfire-beta-jobs" }],
+				"consumers": [{ "queue": "campfire-beta-jobs", "max_batch_size": 10, "max_retries": 3 }]
+			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "REALTIME", "class_name": "RealtimeHub" },
+					{ "name": "RECORDING_SINK", "class_name": "RecordingSink" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
+				{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
+			],
+			"ai": { "binding": "AI" },
+			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
+			"vars": {
+				"EMAIL_TRANSPORT": "log",
+				"EMAIL_FROM": "Log Cabin <cabin@yaaia.id>",
+				"ATTACHMENT_MAX_MB": "25",
+				"APP_URL": "https://cabin.yaaia.id"
+			}
+		},
+		// For automated tests, with fake people only. scripts/reset-test.sh reseeds it.
+		"test": {
+			"name": "campfire-test",
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "campfire-test",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire-test" }],
+			"queues": {
+				"producers": [{ "binding": "JOBS", "queue": "campfire-test-jobs" }],
+				"consumers": [{ "queue": "campfire-test-jobs", "max_batch_size": 10, "max_retries": 3 }]
+			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "REALTIME", "class_name": "RealtimeHub" },
+					{ "name": "RECORDING_SINK", "class_name": "RecordingSink" }
+				]
+			},
+			"migrations": [
+				{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
+				{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
+			],
+			"ai": { "binding": "AI" },
+			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
+			"vars": {
+				"EMAIL_TRANSPORT": "log",
+				"EMAIL_FROM": "Campfire Test <campfire@example.com>",
+				"ATTACHMENT_MAX_MB": "25",
+				// A Worker can't read its own name; the email module refuses real mail when this is campfire-test.
+				"WORKER_NAME": "campfire-test"
+			}
+		}
+	}
+}

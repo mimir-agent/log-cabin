@@ -1,0 +1,75 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`daily digest > comes at 9:00 in the person’s time zone with the last day’s posts by others, and the top comment > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>1 thread you may have missed</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Campfire</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">New in the last day:</td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 0;border-top:1px solid #e5e5e5;"><a href="https://campfire.test/posts/p1" style="color:#171717;text-decoration:none;"><span style="display:block;font-size:14px;line-height:20px;font-weight:600;">ada started the thread “Tent options” in trail</span><span style="display:block;font-size:14px;line-height:20px;color:#737373;">ada: The green one is lighter.</span></a></td></tr></table></td></tr>
+<tr><td style="padding:0 0 16px;font-size:13px;line-height:18px;color:#737373;">Turn digests off, or change when they come: https://campfire.test/settings/notifications</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`daily digest > comes at 9:00 in the person’s time zone with the last day’s posts by others, and the top comment > text 1`] = `
+"Campfire
+
+New in the last day:
+
+- ada started the thread “Tent options” in trail: “ada: The green one is lighter.”
+  https://campfire.test/posts/p1
+
+Turn digests off, or change when they come: https://campfire.test/settings/notifications"
+`;
+
+exports[`weekly summary > comes on Friday at 17:00 with the week’s posts, the person’s own too, and new projects > html 1`] = `
+"<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Campfire weekly summary</title></head>
+<body style="margin:0;padding:0;background-color:#fcfcfc;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fcfcfc;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
+<tr><td style="padding:24px 24px 8px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Campfire</td></tr>
+<tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">New in the last week:</td></tr>
+<tr><td style="padding:0 0 16px;font-size:16px;line-height:22px;font-weight:600;">Threads</td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 0;border-top:1px solid #e5e5e5;"><a href="https://campfire.test/posts/p1" style="color:#171717;text-decoration:none;"><span style="display:block;font-size:14px;line-height:20px;font-weight:600;">ada started the thread “Tent options” in trail</span></a></td></tr></table></td></tr>
+<tr><td style="padding:0 0 16px;font-size:16px;line-height:22px;font-weight:600;">New channels</td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 0;border-top:1px solid #e5e5e5;"><a href="https://campfire.test/projects/river" style="color:#171717;text-decoration:none;"><span style="display:block;font-size:14px;line-height:20px;font-weight:600;">River, created by eve</span></a></td></tr></table></td></tr>
+<tr><td style="padding:0 0 16px;font-size:13px;line-height:18px;color:#737373;">Turn digests off, or change when they come: https://campfire.test/settings/notifications</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>"
+`;
+
+exports[`weekly summary > comes on Friday at 17:00 with the week’s posts, the person’s own too, and new projects > text 1`] = `
+"Campfire
+
+New in the last week:
+
+Threads
+
+- ada started the thread “Tent options” in trail
+  https://campfire.test/posts/p1
+
+New channels
+
+- River, created by eve
+  https://campfire.test/projects/river
+
+Turn digests off, or change when they come: https://campfire.test/settings/notifications"
+`;

@@ -1,0 +1,41 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Cloudflare / Wrangler (generated)
+worker-configuration.d.ts
+.wrangler
+
+*storybook.log
+storybook-static
+
+# Scratch space
+tmp/
+
+# Git worktrees
+.worktrees/
+.dev.vars
+
+# Playwright output
+test-results/
+playwright-report/

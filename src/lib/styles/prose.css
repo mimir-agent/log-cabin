@@ -1,0 +1,361 @@
+/*
+ * .prose: the bodies people write. Post and comment bodies, notes, and the rich editor's
+ * content area all use it, so what you type looks exactly like what gets published.
+ *
+ * The block sets its own size; everything inside inherits it. Spacing between blocks is one
+ * line (1lh) so paragraphs, lists and quotes keep a single rhythm. Headings get space above
+ * more than below, so each one belongs to the text that follows it.
+ */
+@layer layout {
+	.prose {
+		font-family: var(--ff-content);
+		font-size: var(--type-prose);
+		line-height: var(--leading-loose);
+		color: var(--hue-z0-fg);
+		overflow-wrap: break-word;
+		text-wrap: pretty;
+	}
+
+	.prose[data-size='compact'] {
+		/* Comments and chat: interface size, same structure. */
+		font-size: var(--type-body);
+		line-height: var(--leading-loose);
+	}
+
+	/* A note is a document, so it reads a step larger: 16px, with bold headings on a fluid
+	   scale and fixed space above each, as Campsite's `.prose.note` sets them. */
+	.prose[data-size='note'] {
+		font-size: 1rem;
+	}
+
+	.prose[data-size='note'] :is(h1, h2, h3, h4) {
+		font-weight: var(--fw-bold);
+		line-height: 1.3;
+		letter-spacing: -0.01em;
+	}
+
+	.prose[data-size='note'] h1 {
+		font-size: clamp(1.575rem, 4vw, 1.875rem);
+	}
+
+	.prose[data-size='note'] h2 {
+		font-size: clamp(1.275rem, 4vw, 1.575rem);
+	}
+
+	.prose[data-size='note'] :is(h3, h4) {
+		font-size: clamp(1.175rem, 4vw, 1.275rem);
+	}
+
+	.prose[data-size='note'] > * + h1 {
+		margin-block-start: 2.5rem;
+	}
+
+	.prose[data-size='note'] > * + h2 {
+		margin-block-start: 2rem;
+	}
+
+	.prose[data-size='note'] > * + :is(h3, h4) {
+		margin-block-start: 1.5rem;
+	}
+
+	.prose[data-size='note'] > :is(h1, h2) + * {
+		margin-block-start: 0.5rem;
+	}
+
+	.prose[data-size='note'] > :is(h3, h4) + * {
+		margin-block-start: 0.375rem;
+	}
+
+	.prose > * {
+		margin-block: 0;
+	}
+
+	.prose > * + * {
+		margin-block-start: 0.75lh;
+	}
+
+	.prose :is(h1, h2, h3, h4) {
+		font-weight: var(--fw-semibold);
+		max-inline-size: none;
+		letter-spacing: -0.01em;
+	}
+
+	.prose > :is(h1, h2, h3, h4) + * {
+		margin-block-start: 0.25lh;
+	}
+
+	.prose > * + :is(h1, h2, h3, h4) {
+		margin-block-start: 1.25lh;
+	}
+
+	.prose h1 {
+		font-size: var(--text-xl);
+		line-height: var(--leading-tight);
+	}
+
+	.prose h2 {
+		font-size: var(--text-lg);
+		line-height: var(--leading-tight);
+	}
+
+	.prose :is(h3, h4) {
+		font-size: 1em;
+		line-height: inherit;
+	}
+
+	.prose a {
+		color: var(--hue-link);
+		text-decoration-line: underline;
+		text-decoration-thickness: from-font;
+		text-underline-offset: 0.15em;
+		text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+	}
+
+	.prose a:hover {
+		text-decoration-color: currentColor;
+	}
+
+	.prose :is(ul, ol) {
+		padding-inline-start: 1.5em;
+	}
+
+	.prose li + li,
+	.prose li > :is(ul, ol) {
+		margin-block-start: 0.25lh;
+	}
+
+	/* The editor wraps each item's text in a paragraph; it brings no margins of its own, or
+	   every list would read double spaced (Campsite erases them the same way). */
+	.prose li > p {
+		margin-block: 0;
+	}
+
+	.prose li::marker {
+		color: var(--hue-z0-muted);
+	}
+
+	/* Task lists from the editor. */
+	.prose ul[data-type='taskList'] {
+		padding-inline-start: 0;
+		list-style: none;
+	}
+
+	.prose ul[data-type='taskList'] li {
+		display: flex;
+		gap: var(--gap-sm);
+		align-items: baseline;
+	}
+
+	.prose blockquote {
+		margin-inline: 0;
+		padding-inline-start: var(--gap-md);
+		border-inline-start: var(--border-w-standard) solid var(--hue-z0-border);
+		color: var(--hue-z0-muted);
+	}
+
+	.prose :not(pre) > code {
+		padding: 0.1em 0.3em;
+		border-radius: var(--radius-sm);
+		background-color: var(--hue-z1-bg);
+		box-shadow: inset 0 0 0 var(--border-w-thin) var(--hue-z1-border);
+	}
+
+	/* A keyboard key, as Campsite's prose sets it: a small mono chip. */
+	.prose kbd {
+		padding: 0.1em 0.3em;
+		border-radius: var(--radius-md);
+		background-color: var(--hue-kbd-bg);
+		box-shadow: inset 0 0 0 var(--border-w-hairline) var(--hue-z1-border);
+		font-weight: var(--fw-medium);
+	}
+
+	.prose pre {
+		padding: var(--gap-md) var(--gap-lg);
+		overflow-x: auto;
+		border-radius: var(--radius-control);
+		background-color: var(--hue-z1-bg);
+		box-shadow: inset 0 0 0 var(--border-w-thin) var(--hue-z1-border);
+		font-size: var(--text-xs);
+		line-height: var(--leading-loose);
+		tab-size: 2;
+	}
+
+	/* Highlighted code (lowlight's hljs-* classes, in the editor and in RichText), after
+	   Campsite's One Light, in the nearest semantic colours. */
+	.prose :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+		color: var(--hue-z0-muted);
+	}
+
+	.prose
+		:is(.hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-tag, .hljs-name, .hljs-deletion) {
+		color: var(--hue-danger);
+	}
+
+	.prose :is(.hljs-string, .hljs-regexp, .hljs-addition) {
+		color: var(--hue-success);
+	}
+
+	.prose
+		:is(
+			.hljs-number,
+			.hljs-literal,
+			.hljs-symbol,
+			.hljs-built_in,
+			.hljs-type,
+			.hljs-attr,
+			.hljs-attribute,
+			.hljs-variable,
+			.hljs-template-variable,
+			.hljs-selector-class,
+			.hljs-selector-id
+		) {
+		color: var(--hue-warning);
+	}
+
+	.prose :is(.hljs-title, .hljs-section, .hljs-property) {
+		color: var(--hue-accent-subtle-fg);
+	}
+
+	.prose .hljs-emphasis {
+		font-style: italic;
+	}
+
+	.prose .hljs-strong {
+		font-weight: var(--fw-semibold);
+	}
+
+	.prose hr {
+		margin-inline: 0;
+		max-inline-size: none;
+		border: 0;
+		border-block-start: var(--border-w-hairline) solid var(--hue-z0-border);
+	}
+
+	.prose :is(img, video) {
+		display: block;
+		max-inline-size: 100%;
+		block-size: auto;
+		border-radius: var(--radius-control);
+	}
+
+	.prose details {
+		padding: var(--gap-sm) var(--gap-md);
+		border-radius: var(--radius-control);
+		box-shadow: inset 0 0 0 var(--border-w-thin) var(--hue-z0-border);
+	}
+
+	.prose summary {
+		cursor: pointer;
+		font-weight: var(--fw-medium);
+	}
+
+	/* The editor draws a section as a box with an open/close button beside its title and body;
+	   the body is hidden while the section is closed. */
+	.prose [data-type='details'] {
+		display: flex;
+		gap: var(--gap-xs);
+		padding: var(--gap-sm) var(--gap-md);
+		border-radius: var(--radius-control);
+		box-shadow: inset 0 0 0 var(--border-w-thin) var(--hue-z0-border);
+	}
+
+	.prose [data-type='details'] > button {
+		flex: none;
+		inline-size: var(--control-h-xs);
+		block-size: var(--control-h-xs);
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-control);
+		background: none;
+		color: var(--hue-z0-muted);
+		cursor: pointer;
+		rotate: -90deg;
+		transition: rotate var(--motion-fast) var(--motion-ease);
+	}
+
+	.prose [data-type='details'] > button:hover {
+		background-color: var(--hue-hover);
+		color: var(--hue-z0-fg);
+	}
+
+	.prose [data-type='details'].is-open > button {
+		rotate: 0deg;
+	}
+
+	.prose [data-type='details'] > div {
+		flex: 1;
+		min-inline-size: 0;
+	}
+
+	.prose [data-type='details'] summary {
+		display: block;
+		cursor: text;
+	}
+
+	/* A passage a comment was made on, as Campsite's `.note-comment`: a faint yellow wash with
+	   a line under it, which opens the comment. */
+	.prose .note-comment {
+		background-color: var(--hue-highlight);
+		text-decoration: underline var(--border-w-thin) var(--hue-highlight-fg);
+		text-underline-offset: 0.2em;
+		cursor: pointer;
+	}
+
+	/* @mentions and #references from the editor: the name in semibold ink, never a link
+	   colour, as Campsite sets them (prose.css, `.mention`). */
+	.prose :is(.mention, [data-type='mention']) {
+		color: inherit;
+		font-weight: var(--fw-semibold);
+		text-decoration: none;
+	}
+
+	/* A date and time, and a mentioned note, post or call, as Campsite's chips: medium ink on a
+	   faint fill. A mention the reader can't see is a muted span. */
+	.prose :is(.relative-time, .resource-mention) {
+		padding: 0.1em 0.2em;
+		border-radius: var(--radius-md);
+		background-color: var(--hue-hover);
+		color: inherit;
+		font-weight: var(--fw-medium);
+		text-decoration: none;
+	}
+
+	.prose span.resource-mention {
+		color: var(--hue-z0-muted);
+	}
+
+	.prose .resource-mention {
+		box-decoration-break: clone;
+	}
+
+	.prose a.resource-mention:hover {
+		background-color: var(--hue-pressed);
+	}
+
+	.prose :is(table) {
+		inline-size: 100%;
+		border-collapse: collapse;
+		font-size: var(--type-body);
+	}
+
+	.prose :is(th, td) {
+		padding: var(--gap-xs) var(--gap-sm);
+		border: var(--border-w-hairline) solid var(--hue-z0-border);
+		text-align: start;
+	}
+
+	.prose th {
+		background-color: var(--hue-z1-bg);
+		color: var(--hue-z1-muted);
+		font-weight: var(--fw-regular);
+	}
+
+	/* The editor's empty-paragraph placeholder. */
+	.prose p.is-editor-empty:first-child::before {
+		content: attr(data-placeholder);
+		float: inline-start;
+		block-size: 0;
+		color: var(--hue-z0-muted);
+		pointer-events: none;
+	}
+}

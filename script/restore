@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Load a backup (script/backup) into a database of its own, to inspect it or to switch to it.
+#
+#   script/restore <backup.sql.gz> <database-name>
+#
+# Makes the database if it is missing, applies the migrations, loads the backup and rebuilds the search index.
+# It never writes into a deployment's own database: campfire, campfire-staging, campfire-test and campfire-beta
+# are refused. To switch a deployment over, point its database_id in wrangler.jsonc at the restored database
+# and deploy. To rewind in place instead, use D1 Time Travel (docs/beta.md).
+#
+# Fetch a backup with:
+#   wrangler r2 object get campfire-beta-backups/daily/<date>.sql.gz --file <backup.sql.gz> --remote
+#
+# Environment:
+#   WRANGLER   command that runs wrangler (default: "pnpm exec wrangler")
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+[ $# -eq 2 ] || { echo 'Usage: script/restore <backup.sql.gz> <database-name>' >&2; exit 2; }
+backup="$1"
+database="$2"
+[ -f "$backup" ] || { echo "Expected a backup file; $backup is not a file." >&2; exit 2; }
+case "$database" in
+campfire | campfire-staging | campfire-test | campfire-beta)
+	echo "Refusing to load a backup into $database: restore into a database of its own." >&2
+	exit 2
+	;;
+esac
+
+read -ra wrangler_cmd <<<"${WRANGLER:-pnpm exec wrangler}"
+wrangler() { "${wrangler_cmd[@]}" "$@"; }
+helper() { node script/lib/deploy.mjs "$@"; }
+
+config=wrangler.restore.jsonc
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir" "$config"' EXIT
+
+database_id="$(helper database-id "$database" <<<"$(wrangler d1 list --json)")"
+if [ -z "$database_id" ]; then
+	echo "Creating D1 database $database"
+	wrangler d1 create "$database" --update-config=false
+	database_id="$(helper database-id "$database" <<<"$(wrangler d1 list --json)")"
+fi
+cat >"$config" <<JSON
+{
+	"name": "restore",
+	"compatibility_date": "2026-05-07",
+	"d1_databases": [
+		{ "binding": "DB", "database_name": "$database", "database_id": "$database_id", "migrations_dir": "migrations" }
+	]
+}
+JSON
+
+echo "Applying migrations to $database"
+CI=true wrangler d1 migrations apply "$database" --remote --config "$config"
+
+echo "Loading $backup into $database"
+gunzip -c "$backup" >"$work_dir/backup.sql"
+CI=true wrangler d1 execute "$database" --remote --config "$config" --file "$work_dir/backup.sql"
+
+echo 'Rebuilding the search index'
+CI=true wrangler d1 execute "$database" --remote --config "$config" --file script/reindex.sql
+
+echo "Done: $database ($database_id)"

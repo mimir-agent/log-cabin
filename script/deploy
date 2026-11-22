@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# Provision and deploy Campfire to Cloudflare. Safe to re-run: it creates only what is missing.
+#
+#   script/deploy                 production (names from the top of wrangler.jsonc)
+#   script/deploy --env staging   staging (names from env.staging in wrangler.jsonc)
+#   script/deploy --env beta      the beta deployment, on its own address (names from env.beta)
+#   script/deploy --env test      the test deployment, for automated tests (names from env.test)
+#   script/deploy --no-build      deploy the build already in .svelte-kit (for example one made by CI)
+#
+# Environment:
+#   CLOUDFLARE_ACCOUNT_ID  which account to use when your login has several
+#   WRANGLER               command that runs wrangler (default: "pnpm exec wrangler")
+#   WRANGLER_CONFIG        config file to use and update (default: wrangler.jsonc)
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+usage() {
+	echo 'Usage: script/deploy [--env staging|beta|test] [--no-build]' >&2
+	exit "$1"
+}
+
+env=''
+build=true
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--no-build)
+		build=false
+		shift
+		;;
+	--env)
+		[ $# -ge 2 ] || usage 2
+		env="$2"
+		shift 2
+		;;
+	--env=*)
+		env="${1#--env=}"
+		shift
+		;;
+	-h | --help) usage 0 ;;
+	*)
+		echo "Unknown argument: $1" >&2
+		usage 2
+		;;
+	esac
+done
+case "$env" in
+'' | staging | beta | test) ;;
+*)
+	echo "Expected --env staging, --env beta, --env test or no --env; got --env $env" >&2
+	usage 2
+	;;
+esac
+
+# Check the whole build before touching the account. A partial one would get past the migrations
+# and then fail to deploy, leaving the database ahead of the code.
+if [ "$build" = false ]; then
+	bad_build=()
+	for file in .svelte-kit/cloudflare/_worker.js .svelte-kit/cloudflare-tmp/server.js \
+		.svelte-kit/output/server/index.js .svelte-kit/cloudflare/_app/version.json; do
+		if [ ! -e "$file" ]; then
+			bad_build+=("$file is missing")
+		elif [ ! -f "$file" ]; then
+			bad_build+=("$file is not a file")
+		elif [ ! -s "$file" ]; then
+			bad_build+=("$file is empty")
+		fi
+	done
+	assets=.svelte-kit/cloudflare/_app/immutable
+	if [ ! -d "$assets" ]; then
+		bad_build+=("$assets/ is missing")
+	elif [ -z "$(ls -A "$assets")" ]; then
+		bad_build+=("$assets/ is empty")
+	fi
+	if [ ${#bad_build[@]} -gt 0 ]; then
+		echo 'Expected a whole build in .svelte-kit (--no-build). Run pnpm build or unpack one there. Found:' >&2
+		printf '  %s\n' "${bad_build[@]}" >&2
+		exit 1
+	fi
+fi
+
+read -ra wrangler_cmd <<<"${WRANGLER:-pnpm exec wrangler}"
+config="${WRANGLER_CONFIG:-wrangler.jsonc}"
+env_args=()
+[ -n "$env" ] && env_args=(--env "$env")
+
+wrangler() { "${wrangler_cmd[@]}" "$@" --config "$config"; }
+# Same, for commands that take --env. (${a[@]+...} keeps empty arrays safe on bash 3.2.)
+wrangler_env() { wrangler "$@" ${env_args[@]+"${env_args[@]}"}; }
+helper() { node script/lib/deploy.mjs "$@"; }
+
+placeholder_id='00000000-0000-0000-0000-000000000000'
+secret_names=(SESSION_SECRET SETUP_TOKEN VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY ATPROTO_CLIENT_KEY)
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir"' EXIT
+
+read_config() {
+	{
+		read -r worker
+		read -r database
+		read -r config_database_id
+		read -r bucket
+		read -r queue
+	} < <(helper config "$config" "$env")
+}
+read_config
+echo "Deploying Worker $worker (D1 $database, R2 $bucket, queue $queue)"
+
+# Login
+if ! whoami_json="$(wrangler whoami --json 2>"$work_dir/whoami.err")"; then
+	if grep -qE '"loggedIn": ?false' - "$work_dir/whoami.err" <<<"$whoami_json"; then
+		echo 'Not logged in to Cloudflare. Run: pnpm wrangler login' >&2
+	else
+		echo 'Expected wrangler whoami to show your login; it failed:' >&2
+		cat "$work_dir/whoami.err" >&2
+	fi
+	exit 1
+fi
+accounts="$(helper accounts <<<"$whoami_json")"
+if [ -z "$accounts" ]; then
+	echo 'Expected your Cloudflare login to have an account; it has none.' >&2
+	exit 1
+fi
+if [ "$(wc -l <<<"$accounts")" -gt 1 ] && [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+	echo 'Your login has several accounts. Set CLOUDFLARE_ACCOUNT_ID to the one to deploy to:' >&2
+	echo "$accounts" >&2
+	exit 1
+fi
+
+# D1 database
+database_list="$(wrangler d1 list --json)"
+database_id="$(helper database-id "$database" <<<"$database_list")"
+if [ -z "$database_id" ]; then
+	if [ "$config_database_id" != "$placeholder_id" ]; then
+		echo "Expected a D1 database named $database in this account (to match database_id $config_database_id in $config); found none. Logged in to the wrong account?" >&2
+		exit 1
+	fi
+	echo "Creating D1 database $database"
+	wrangler d1 create "$database" --update-config=false
+	database_list="$(wrangler d1 list --json)"
+	database_id="$(helper database-id "$database" <<<"$database_list")"
+	if [ -z "$database_id" ]; then
+		echo "Expected D1 database $database to be listed after creating it; it is not." >&2
+		exit 1
+	fi
+else
+	echo "D1 database $database exists"
+fi
+if [ "$config_database_id" = "$placeholder_id" ]; then
+	echo "Writing database_id $database_id for $database into $config"
+	helper set-database-id "$config" "$database" "$database_id"
+	read_config
+fi
+if [ "$config_database_id" != "$database_id" ]; then
+	echo "Expected database_id $database_id for $database in $config (the account's database); found $config_database_id." >&2
+	exit 1
+fi
+
+# R2 bucket
+bucket_list="$(wrangler r2 bucket list | sed $'s/\x1b\\[[0-9;]*m//g')"
+if grep -qE "^name:[[:space:]]+$bucket\$" <<<"$bucket_list"; then
+	echo "R2 bucket $bucket exists"
+else
+	echo "Creating R2 bucket $bucket"
+	wrangler r2 bucket create "$bucket" --update-config=false
+fi
+
+# Queue
+if queue_info="$(wrangler queues info "$queue" 2>&1)"; then
+	echo "Queue $queue exists"
+elif grep -q "Queue \"$queue\" does not exist" <<<"$queue_info"; then
+	echo "Creating queue $queue"
+	wrangler queues create "$queue"
+else
+	echo "Expected to look up queue $queue; wrangler failed:" >&2
+	echo "$queue_info" >&2
+	exit 1
+fi
+
+# Build, bundle and migrate
+if [ "$build" = true ]; then
+	pnpm build
+fi
+# Bundle without uploading first, so the database never moves ahead of code that won't bundle.
+wrangler_env deploy --dry-run --outdir "$work_dir/bundle"
+# Bundling never runs the code, so also start the Worker locally: one that throws at startup bundles fine.
+if ! wrangler_env check startup --outfile "$work_dir/startup.cpuprofile"; then
+	echo 'Expected the Worker to start; it failed at startup (see above). The database was not migrated.' >&2
+	exit 1
+fi
+# CI=true makes wrangler apply without waiting for a confirmation.
+CI=true wrangler_env d1 migrations apply "$database" --remote
+
+# Secrets. `secret list` fails until the Worker exists, so on the first run every secret is
+# missing. Missing secrets are generated here and uploaded with the deploy (--secrets-file),
+# which works whether or not the Worker exists yet and leaves existing secrets alone.
+missing=()
+if secret_list="$(wrangler_env secret list --format json 2>"$work_dir/secret-list.err")"; then
+	while IFS= read -r name; do
+		missing+=("$name")
+	done < <(helper missing-secrets "${secret_names[@]}" <<<"$secret_list")
+elif grep -q 'If this is a new Worker' "$work_dir/secret-list.err"; then
+	missing=("${secret_names[@]}")
+else
+	echo "Expected to list the secrets of Worker $worker; wrangler failed:" >&2
+	cat "$work_dir/secret-list.err" >&2
+	exit 1
+fi
+
+setup_token=''
+deploy_args=()
+if [ ${#missing[@]} -gt 0 ]; then
+	echo "Generating secrets: ${missing[*]}"
+	setup_token="$(helper generate-secrets "$work_dir/secrets.json" "${missing[@]}")"
+	deploy_args=(--secrets-file "$work_dir/secrets.json")
+else
+	echo 'Secrets are already set'
+fi
+
+# Deploy
+wrangler_env deploy ${deploy_args[@]+"${deploy_args[@]}"} | tee "$work_dir/deploy.log"
+custom_url="$(helper app-url "$config" "$env")"
+url="$custom_url"
+if [ -z "$url" ]; then
+	url="$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' "$work_dir/deploy.log" | head -n 1 || true)"
+fi
+if [ -z "$url" ]; then
+	echo 'Expected a workers.dev URL in the deploy output (or a custom domain in the config); found none. See the output above.' >&2
+	exit 1
+fi
+
+# Notification email links need the deployment's address. Set once; replace it for a custom domain.
+# A deployment on a custom domain carries APP_URL in its config instead.
+if [ -z "$custom_url" ] && ! grep -q '"APP_URL"' <<<"${secret_list:-}"; then
+	printf '%s' "$url" | wrangler_env secret put APP_URL
+fi
+
+echo
+echo "Deployed: $url"
+if [ -n "$setup_token" ]; then
+	echo "Setup token: $setup_token"
+	echo 'It is not stored anywhere you can read it back. Keep it until setup is done.'
+else
+	echo "The setup token was set on an earlier run. To make a new one: pnpm wrangler secret put SETUP_TOKEN${env:+ --env $env}"
+fi
+echo "Next: open $url/setup and finish setup."
+
+# Calls stay hidden until the deployment has a Cloudflare Realtime SFU app.
+if ! grep -q '"REALTIME_APP_ID"' <<<"${secret_list:-}"; then
+	echo
+	echo 'Calls are off until you connect a Cloudflare Realtime SFU app:'
+	echo '  1. In the Cloudflare dashboard, open Realtime and create an SFU app.'
+	echo "  2. pnpm wrangler secret put REALTIME_APP_ID${env:+ --env $env}     (the app ID)"
+	echo "  3. pnpm wrangler secret put REALTIME_APP_TOKEN${env:+ --env $env}  (the app token)"
+	echo '  For people on networks that block direct media, also create a TURN key under Realtime'
+	echo '  and set REALTIME_TURN_KEY_ID and REALTIME_TURN_KEY_TOKEN the same way.'
+fi

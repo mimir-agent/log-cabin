@@ -1,0 +1,67 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from 'eslint-plugin-storybook';
+
+import prettier from 'eslint-config-prettier';
+import path from 'node:path';
+import { includeIgnoreFile } from '@eslint/compat';
+import js from '@eslint/js';
+import svelte from 'eslint-plugin-svelte';
+import { defineConfig } from 'eslint/config';
+import globals from 'globals';
+import ts from 'typescript-eslint';
+import { loadConfig } from '@sveltejs/load-config';
+
+const loaded = await loadConfig('./', { traverse: false });
+if (!loaded) {
+	throw new Error(
+		`ESLint found no vite.config or svelte.config in ${process.cwd()}; run it from the repository root`
+	);
+}
+if ('error' in loaded) {
+	throw new Error(`ESLint could not load the Svelte config from ${loaded.configFilePath}`, {
+		cause: loaded.error
+	});
+}
+const svelteConfig = loaded.config;
+
+const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
+
+export default defineConfig(
+	includeIgnoreFile(gitignorePath),
+	js.configs.recommended,
+	ts.configs.recommended,
+	svelte.configs.recommended,
+	prettier,
+	svelte.configs.prettier,
+	...storybook.configs['flat/recommended'],
+	{
+		languageOptions: { globals: { ...globals.browser, ...globals.node } },
+		rules: {
+			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
+			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
+			'no-undef': 'off'
+		}
+	},
+	{
+		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+		languageOptions: {
+			parserOptions: {
+				projectService: true,
+				extraFileExtensions: ['.svelte'],
+				parser: ts.parser,
+				svelteConfig
+			}
+		}
+	},
+	{
+		// Override or add rule settings here, such as:
+		// 'svelte/button-has-type': 'error'
+		rules: {
+			// const by default: a reader seeing `let` should know the binding changes.
+			// The svelte variant understands runes, so `$props()` and `$derived` stay `let`.
+			// It replaces the core rule, which typescript-eslint turns on for .ts files.
+			'prefer-const': 'off',
+			'svelte/prefer-const': 'error'
+		}
+	}
+);

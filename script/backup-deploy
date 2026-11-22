@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Provision and deploy the beta database's backup Worker. Safe to re-run: it creates only what is missing.
+#
+#   script/backup-deploy
+#
+# Makes the backups bucket (campfire-beta-backups) with a 30-day expiry on every backup it holds, deploys the
+# Worker in script/backup, and sets its BACKUP_TOKEN if it has none. A new token is written to the file named in
+# BACKUP_TOKEN_FILE (mode 0600) and never printed.
+#
+# Environment:
+#   WRANGLER           command that runs wrangler (default: "pnpm exec wrangler")
+#   BACKUP_TOKEN_FILE  where a new token goes (required only when the Worker has no token yet)
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+read -ra wrangler_cmd <<<"${WRANGLER:-pnpm exec wrangler}"
+wrangler() { "${wrangler_cmd[@]}" "$@"; }
+
+database=campfire-beta
+bucket=campfire-beta-backups
+worker=campfire-beta-backup
+config=script/backup/wrangler.real.jsonc
+trap 'rm -f "$config"' EXIT
+
+database_id="$(node script/lib/deploy.mjs database-id "$database" <<<"$(wrangler d1 list --json)")"
+if [ -z "$database_id" ]; then
+	echo "Expected a D1 database named $database in this account; found none. Run script/deploy --env beta first." >&2
+	exit 1
+fi
+sed "s/00000000-0000-0000-0000-000000000000/$database_id/" script/backup/wrangler.jsonc >"$config"
+
+bucket_list="$(wrangler r2 bucket list | sed $'s/\x1b\\[[0-9;]*m//g')"
+if grep -qE "^name:[[:space:]]+$bucket\$" <<<"$bucket_list"; then
+	echo "R2 bucket $bucket exists"
+else
+	echo "Creating R2 bucket $bucket"
+	wrangler r2 bucket create "$bucket"
+fi
+
+# Daily backups and the ones taken before a migration both go after 30 days.
+rules="$(wrangler r2 bucket lifecycle list "$bucket" 2>&1 || true)"
+for rule in "daily:daily/" "pre-migration:pre-migration"; do
+	name="expire-${rule%%:*}-30d"
+	if grep -q "$name" <<<"$rules"; then
+		echo "Lifecycle rule $name exists"
+	else
+		echo "Adding lifecycle rule $name"
+		wrangler r2 bucket lifecycle add "$bucket" "$name" "${rule#*:}" --expire-days 30 --force
+	fi
+done
+
+if wrangler secret list --config "$config" --format json 2>/dev/null | grep -q '"BACKUP_TOKEN"'; then
+	wrangler deploy --config "$config"
+else
+	: "${BACKUP_TOKEN_FILE:?Set BACKUP_TOKEN_FILE: the Worker has no BACKUP_TOKEN yet}"
+	umask 077
+	head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >"$BACKUP_TOKEN_FILE"
+	wrangler deploy --config "$config"
+	wrangler secret put BACKUP_TOKEN --config "$config" <"$BACKUP_TOKEN_FILE"
+fi

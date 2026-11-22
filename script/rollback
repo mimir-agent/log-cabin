@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Put a deployment's code back on an earlier Worker version.
+#
+#   script/rollback --env beta                 the version before the current one
+#   script/rollback --env beta <version-id>    that version (see: script/rollback --env beta --list)
+#   script/rollback --env beta --list          recent versions, newest first, and which is live
+#
+# Only code moves. The database stays where it is: migrations only go forward, so an earlier version must
+# work with the newer schema (migrations add; they do not rename or drop while a version that reads the old
+# shape can still be live). To rewind data instead, see docs/beta.md (Time Travel, or the daily export).
+#
+# Environment:
+#   WRANGLER         command that runs wrangler (default: "pnpm exec wrangler")
+#   WRANGLER_CONFIG  config file to use (default: wrangler.jsonc)
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+usage() {
+	echo 'Usage: script/rollback --env staging|beta [--list | <version-id>]' >&2
+	exit "$1"
+}
+
+env=''
+list=false
+version=''
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--env)
+		[ $# -ge 2 ] || usage 2
+		env="$2"
+		shift 2
+		;;
+	--env=*)
+		env="${1#--env=}"
+		shift
+		;;
+	--list)
+		list=true
+		shift
+		;;
+	-h | --help) usage 0 ;;
+	-*)
+		echo "Unknown argument: $1" >&2
+		usage 2
+		;;
+	*)
+		[ -z "$version" ] || usage 2
+		version="$1"
+		shift
+		;;
+	esac
+done
+case "$env" in
+staging | beta) ;;
+*)
+	echo "Expected --env staging or --env beta; got --env ${env:-nothing}" >&2
+	usage 2
+	;;
+esac
+if [ -n "$version" ] && ! [[ "$version" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+	echo "Expected a Worker version id (a UUID); got $version" >&2
+	usage 2
+fi
+
+read -ra wrangler_cmd <<<"${WRANGLER:-pnpm exec wrangler}"
+config="${WRANGLER_CONFIG:-wrangler.jsonc}"
+wrangler() { "${wrangler_cmd[@]}" "$@" --config "$config" --env "$env"; }
+
+if [ "$list" = true ]; then
+	wrangler deployments list
+	exit 0
+fi
+
+echo "Serving now:"
+wrangler deployments status
+if [ -n "$version" ]; then
+	echo "Rolling $env back to version $version"
+	wrangler rollback "$version" --message "script/rollback" --yes
+else
+	echo "Rolling $env back to the version before the current one"
+	wrangler rollback --message "script/rollback" --yes
+fi
+echo
+echo "Serving now:"
+wrangler deployments status
+echo
+echo "Only the code moved. The database was not touched."

@@ -1,0 +1,100 @@
+import { describe, expect, it } from 'vitest';
+import { runCron } from '../jobs';
+import { notificationWorld } from './testing/world';
+
+const minute = 60 * 1000;
+
+function cron(env: Env, schedule: '*/5 * * * *' | '0 * * * *', scheduledTime: number) {
+	return runCron({ cron: schedule, scheduledTime } as ScheduledController, env);
+}
+
+function notification(
+	w: ReturnType<typeof notificationWorld>,
+	id: string,
+	userId: string,
+	kind: string,
+	createdAt: number,
+	{ readAt = null as number | null, itemKey = `item:${id}` } = {}
+) {
+	w.sqlite
+		.prepare(
+			"INSERT INTO notifications (id, user_id, actor_id, kind, item_key, url, source, created_at, read_at) VALUES (?, ?, 'ada', ?, ?, '/posts/p1', ?, ?, ?)"
+		)
+		.run(id, userId, kind, itemKey, `src:${id}`, createdAt, readAt);
+}
+
+function mail(w: ReturnType<typeof notificationWorld>) {
+	return w.sqlite
+		.prepare('SELECT to_address, subject, text_body, html_body FROM dev_mail ORDER BY created_at')
+		.all() as { to_address: string; subject: string; text_body: string; html_body: string }[];
+}
+
+describe('unread notification emails', () => {
+	const now = Date.UTC(2026, 10, 18, 12, 0);
+
+	it('emails a mention or message still unread after 10 minutes, once', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		notification(w, 'n1', 'bo', 'mention', now - 11 * minute);
+		notification(w, 'n2', 'bo', 'message', now - 12 * minute);
+		await cron(w.env, '*/5 * * * *', now);
+		await cron(w.env, '*/5 * * * *', now + 5 * minute);
+		const sent = mail(w);
+		expect(sent).toHaveLength(1);
+		expect(sent[0].to_address).toBe('bo@example.com');
+		expect(sent[0].subject).toBe('You have 2 unread notifications');
+		expect(sent[0].text_body).toContain('- ada mentioned you\n  https://campfire.test/posts/p1');
+		expect(sent[0].text_body).toContain('ada sent you a message');
+		expect(sent[0].text_body).toMatchSnapshot('text');
+		expect(sent[0].html_body).toMatchSnapshot('html');
+	});
+
+	it('waits until a notification is 10 minutes old, and skips it once read', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		notification(w, 'young', 'bo', 'mention', now - 5 * minute);
+		notification(w, 'read', 'bo', 'mention', now - 20 * minute, { readAt: now - 15 * minute });
+		await cron(w.env, '*/5 * * * *', now);
+		expect(mail(w)).toEqual([]);
+	});
+
+	it('emails only the kinds the person gets by email', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		notification(w, 'n1', 'bo', 'comment', now - 11 * minute);
+		await cron(w.env, '*/5 * * * *', now);
+		expect(mail(w), 'comments are not emailed by default').toEqual([]);
+		w.sqlite
+			.prepare(
+				"INSERT INTO notification_settings VALUES ('bo', '[\"comment\"]', '[]', 0, 9, 0, 5, 17, NULL, NULL)"
+			)
+			.run();
+		notification(w, 'n2', 'bo', 'comment', now - 11 * minute);
+		await cron(w.env, '*/5 * * * *', now);
+		expect(mail(w)).toEqual([
+			expect.objectContaining({ subject: 'You have 1 unread notification' })
+		]);
+	});
+
+	it('says a comment on a note is about a note, and one on a post about the post', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		w.sqlite
+			.prepare(
+				"INSERT INTO notification_settings VALUES ('bo', '[\"comment\"]', '[]', 0, 9, 0, 5, 17, NULL, NULL)"
+			)
+			.run();
+		notification(w, 'n1', 'bo', 'comment', now - 11 * minute, { itemKey: 'note:x1' });
+		notification(w, 'n2', 'bo', 'comment', now - 12 * minute, { itemKey: 'post:p1' });
+		await cron(w.env, '*/5 * * * *', now);
+		const [sent] = mail(w);
+		expect(sent.text_body, 'the note comment').toContain('- ada commented on a doc\n');
+		expect(sent.text_body, 'the post comment').toContain(
+			'- ada commented on a thread you follow\n'
+		);
+	});
+});

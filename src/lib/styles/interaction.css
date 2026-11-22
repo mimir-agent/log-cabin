@@ -1,0 +1,160 @@
+/*
+ * App-wide interaction defaults: native form controls, focus and motion. Components add their
+ * own states on top.
+ */
+
+/* Native fields take the surface tokens, so a plain <input> or <select> in any page matches the
+   theme instead of the browser's own cold grey in dark mode. In the `default` layer: any
+   component's own styles win. */
+@layer default {
+	:where(
+		input:not(
+			[type='checkbox'],
+			[type='radio'],
+			[type='range'],
+			[type='file'],
+			[type='color'],
+			[type='hidden'],
+			[type='button'],
+			[type='submit'],
+			[type='reset'],
+			[type='image']
+		),
+		select,
+		textarea
+	) {
+		min-block-size: var(--control-h-md);
+		padding-inline: var(--gap-sm);
+		border: var(--border-w-hairline) solid var(--hue-z0-border);
+		border-radius: var(--radius-control);
+		background-color: var(--hue-field-bg);
+		color: var(--hue-z0-fg);
+		font-size: var(--type-control);
+	}
+
+	/* Only editable hosts: ProseMirror marks atoms such as mentions contenteditable="false",
+	   and those inherit the editor's size. */
+	:where([contenteditable]:not([contenteditable='false'])) {
+		font-size: var(--type-control);
+	}
+
+	:where(textarea) {
+		padding-block: var(--gap-xs);
+	}
+
+	:where(input, textarea)::placeholder {
+		color: var(--hue-z0-muted);
+		opacity: 1;
+	}
+
+	/* A field you can read and copy but not change sits back a step: a well, in the second grey. */
+	:where(input[readonly], textarea[readonly]) {
+		background-color: var(--hue-z1-bg);
+		color: var(--hue-text-secondary);
+	}
+
+	:where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+		accent-color: var(--hue-accent);
+	}
+
+	/* The file input's button reads as a secondary button. */
+	::file-selector-button {
+		block-size: var(--control-h-sm);
+		margin-inline-end: var(--gap-sm);
+		padding-inline: var(--gap-sm);
+		border: var(--border-w-hairline) solid var(--hue-z0-border);
+		border-radius: var(--radius-control);
+		background-color: transparent;
+		color: inherit;
+		font: inherit;
+		font-weight: var(--fw-medium);
+		cursor: pointer;
+	}
+
+	::file-selector-button:hover {
+		background-color: var(--hue-hover);
+	}
+}
+
+@layer layout {
+	/* The rich editor writes in prose's size (prose.css), never under the control size. */
+	.ProseMirror.prose {
+		font-size: max(var(--type-prose), var(--type-control));
+	}
+
+	.ProseMirror.prose[data-size='compact'] {
+		font-size: var(--type-control);
+	}
+
+	/* Keyboard focus is always visible, never on mouse click. */
+	:focus-visible {
+		outline: var(--focus-ring-width) solid var(--hue-focus-ring);
+		outline-offset: var(--focus-ring-offset);
+	}
+
+	/* A writing surface's focus is its caret; a ring around the text is noise. Controls keep theirs. */
+	:where(.ProseMirror, .note-title, .composer-card .subject input):focus-visible {
+		outline: none;
+	}
+
+	:where(.ProseMirror, .note-title, .composer-card .subject input) {
+		caret-color: var(--hue-caret);
+	}
+
+	/* A dialog's panel takes focus so the keyboard starts inside it, but it isn't a control. */
+	:where([role='dialog'], [role='alertdialog']):focus-visible {
+		outline: none;
+	}
+
+	/* Inside a list, a focused row draws its ring inside its own box so neighbours don't clip it. */
+	[data-focus='inset']:focus-visible {
+		outline-offset: calc(var(--focus-ring-width) * -1);
+	}
+
+	:where(a, button, [role='button'], summary) {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	/* No double-tap zoom on controls, so a tap is a click at once. */
+	:where(a[href], button, [role='button'], [role='tab'], summary, label[for]) {
+		touch-action: manipulation;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		::before,
+		::after {
+			transition-duration: 1ms !important; /* user preference outranks every component */
+			animation-duration: 1ms !important;
+			animation-iteration-count: 1 !important;
+		}
+	}
+}
+
+/* A control that opts in with `data-tap` and is smaller than a finger gets a hit area of
+   --tap-min, centred on it, without growing. Touch only. The area reaches (--tap-min - size) / 2
+   past each edge, and a later control's area lies over an earlier one's face, so opt in only
+   where every neighbour is at least that far away. A control with a closer neighbour grows to
+   --tap-min instead (Button and IconButton do). */
+@media (pointer: coarse) {
+	:where([data-tap]) {
+		position: relative;
+	}
+
+	[data-tap]::after {
+		content: '';
+		position: absolute;
+		inset: 50% auto auto 50%;
+		inline-size: max(100%, var(--tap-min));
+		block-size: max(100%, var(--tap-min));
+		translate: -50% -50%;
+	}
+}
+
+/* The pressed state for a control that opts in with `data-press`: the pressed tint while held,
+   at once, over the control's own fill and hover. Outside the layers, and scoped to links and
+   buttons, so it outranks a component's own `:hover` and `[data-state]` fills. */
+:is(a, button)[data-press]:active:not(:disabled) {
+	background-color: var(--hue-pressed);
+	transition-duration: var(--motion-instant);
+}
