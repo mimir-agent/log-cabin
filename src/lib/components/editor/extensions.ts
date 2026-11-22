@@ -17,6 +17,7 @@ import MentionList from './MentionList.svelte';
 import SlashMenu from './SlashMenu.svelte';
 import { MarkdownPaste } from './markdown-paste.js';
 import { suggestionRender } from './suggestion-render.js';
+import { EditableRelativeTime } from './time-chip.js';
 
 export type { Member, MentionItem, ResourceItem };
 const slashKey = new PluginKey('slash');
@@ -226,10 +227,12 @@ export function editorExtensions(opts: {
 		...documentExtensions({
 			mentionSuggestion: opts.mentionSuggestion,
 			undoRedo: !opts.live
-		}).filter(
-			(extension) =>
-				(opts.checklists || !taskNodes.includes(extension.name)) && !replaced.has(extension.name)
-		),
+		})
+			.map((extension) => (extension.name === 'relativeTime' ? EditableRelativeTime : extension))
+			.filter(
+				(extension) =>
+					(opts.checklists || !taskNodes.includes(extension.name)) && !replaced.has(extension.name)
+			),
 		...extra,
 		...(replaced.has('markdownPaste') ? [] : [MarkdownPaste()]),
 		markdownLink,

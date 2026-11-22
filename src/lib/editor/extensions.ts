@@ -119,6 +119,11 @@ export function nextHour(): Date {
 	return at;
 }
 
+/** An instant as a datetime-local field takes it: YYYY-MM-DDTHH:mm on this device's clock. */
+export function localFieldValue(at: number): string {
+	return new Date(at - new Date(at).getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 /** A time to insert: the instant, with this device's zone as the one it was written in. */
 export const timeNode = (timestamp: number) => ({
 	type: 'relativeTime',

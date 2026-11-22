@@ -7,7 +7,7 @@
 	import { Popover, Toolbar } from 'bits-ui';
 	import { docImages, type DocNode, type ResourceTitles } from '#lib/editor/doc.js';
 	import { fileNode, uploadFile } from '#lib/editor/upload.js';
-	import { linkHref, nextHour, timeNode } from '#lib/editor/extensions.js';
+	import { linkHref, localFieldValue, nextHour, timeNode } from '#lib/editor/extensions.js';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import UiPopover from '#lib/components/ui/Popover.svelte';
@@ -493,8 +493,7 @@
 
 	$effect(() => {
 		if (!timeOpen) return;
-		const at = nextHour();
-		timeValue = new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm, what the field takes
+		timeValue = localFieldValue(nextHour().getTime());
 	});
 
 	function insertTime(event: SubmitEvent) {
@@ -775,6 +774,30 @@
 
 	[data-compact] .content {
 		min-block-size: calc(var(--gap-xl) * 3);
+	}
+
+	/* A time in the editor holds a transparent date and time field over its chip, 44px at least
+	   to tap, so a tap lands on the field (what makes iOS open its picker). The chip stays on
+	   one line, or the field would sit between its halves. A reader has no field. */
+	.content :global(.ProseMirror .relative-time.editable) {
+		position: relative;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.content :global(.ProseMirror[contenteditable='false'] .relative-time.editable input) {
+		display: none;
+	}
+
+	.content :global(.ProseMirror .relative-time.editable input) {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: max(100%, 44px);
+		height: 44px;
+		transform: translate(-50%, -50%);
+		opacity: 0;
+		cursor: pointer;
 	}
 
 	.content :global(.ProseMirror [data-attachment]) {

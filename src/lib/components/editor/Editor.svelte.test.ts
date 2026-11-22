@@ -73,6 +73,92 @@ describe('Editor', () => {
 		});
 	});
 
+	it('changes a time through its own field, with the picker device zone, and shows a reader no field to use', async () => {
+		const at = new Date('2030-01-02T09:30').getTime();
+		const value: DocNode = {
+			type: 'doc',
+			content: [
+				{ type: 'paragraph', content: [{ type: 'relativeTime', attrs: { timestamp: at } }] }
+			]
+		};
+		const writer = render(Editor, { ...props, note: true, value });
+		const box = page.getByRole('textbox', { name: 'Write something' });
+		await expect.poll(() => box.element().querySelector('time input')).not.toBeNull();
+		const chip = box.element().querySelector('time')!;
+		const field = chip.querySelector('input')!;
+		field.value = '2030-02-03T10:00';
+		field.dispatchEvent(new Event('change', { bubbles: true }));
+		await expect.poll(() => chip.textContent).toBe('Sun, Feb 3, 10:00 AM');
+		const body = JSON.parse(
+			(document.querySelector('input[name="body"]') as HTMLInputElement).value
+		);
+		expect(body.content[0].content[0].attrs).toEqual({
+			timestamp: new Date('2030-02-03T10:00').getTime(),
+			zone: Intl.DateTimeFormat().resolvedOptions().timeZone
+		});
+		writer.unmount();
+
+		render(Editor, { ...props, note: true, value, disabled: true });
+		await expect
+			.poll(() => {
+				const field = document.querySelector('.relative-time input');
+				return field && getComputedStyle(field).display;
+			})
+			.toBe('none');
+	});
+
+	it('keeps a time when its field gets a five-digit year', async () => {
+		const at = new Date('2030-01-02T09:30').getTime();
+		const value: DocNode = {
+			type: 'doc',
+			content: [
+				{ type: 'paragraph', content: [{ type: 'relativeTime', attrs: { timestamp: at } }] }
+			]
+		};
+		render(Editor, { ...props, note: true, value });
+		const box = page.getByRole('textbox', { name: 'Write something' });
+		await expect.poll(() => box.element().querySelector('time input')).not.toBeNull();
+		const chip = box.element().querySelector('time')!;
+		const field = chip.querySelector('input')!;
+		const shown = chip.textContent;
+
+		field.value = '20301-02-03T10:00';
+		field.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(chip.textContent).toBe(shown);
+	});
+
+	it('submits no form when Enter is pressed in a time field', async () => {
+		const value: DocNode = {
+			type: 'doc',
+			content: [
+				{
+					type: 'paragraph',
+					content: [
+						{ type: 'relativeTime', attrs: { timestamp: new Date('2030-01-02T09:30').getTime() } }
+					]
+				}
+			]
+		};
+		let submits = 0;
+		const form = document.createElement('form');
+		form.innerHTML = '<button>Send</button>';
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			submits++;
+		});
+		document.body.appendChild(form);
+		render(Editor, { target: form, props: { ...props, note: true, value } });
+		const box = page.getByRole('textbox', { name: 'Write something' });
+		await expect.poll(() => box.element().querySelector('time input')).not.toBeNull();
+		const field = box.element().querySelector('time input') as HTMLInputElement;
+
+		expect(field.form).toBe(form);
+		field.focus();
+		await userEvent.keyboard('{Enter}');
+		expect(submits).toBe(0);
+		form.remove();
+	});
+
 	it('offers the next full hour in the date and time field, so Insert works untouched', async () => {
 		render(Editor, { ...props, note: true });
 		await page.getByRole('textbox', { name: 'Write something' }).click();
