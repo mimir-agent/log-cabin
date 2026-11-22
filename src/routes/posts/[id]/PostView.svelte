@@ -143,7 +143,12 @@
 			<AskFeedbackDialog candidates={data.feedbackCandidates} bind:open={askingFeedback} />
 		{/if}
 		{#if canResolve && data.canWrite}
-			<ResolveDialog bind:open={resolving} members={data.people} {uploadUrl} />
+			<ResolveDialog
+				bind:open={resolving}
+				members={data.people}
+				{uploadUrl}
+				canDraft={data.summaries !== 'off'}
+			/>
 		{/if}
 		{#if narrow.current || canEdit || canResolve}
 			<Menu align="end">
@@ -345,11 +350,16 @@
 				<a class="in" href={resolve('/projects/[id]', { id: post.projectId })}
 					>{posts.feed.inProject(post.project.name)}</a
 				>
-				<time
-					datetime={new Date(post.createdAt).toISOString()}
+				<span aria-hidden="true">·</span>
+				<a
+					class="when"
+					href={resolve('/posts/[id]', { id: post.id })}
 					title={time.long(post.createdAt, data.timeZone)}
-					>{time.short(post.createdAt, data.timeZone)}</time
 				>
+					<time datetime={new Date(post.createdAt).toISOString()}
+						>{time.short(post.createdAt, data.timeZone)}</time
+					>
+				</a>
 				{#if post.editedAt}<span class="edited">{s.edited}</span>{/if}
 				{#if data.versions.length > 1}
 					<a class="versions" href={resolve('/posts/[id]/versions', { id: post.id })}
@@ -494,7 +504,7 @@
 
 	.column {
 		inline-size: 100%;
-		max-inline-size: var(--measure-post);
+		max-inline-size: var(--column-post);
 		margin-inline: auto;
 		padding-inline: var(--gap-lg);
 	}
@@ -593,12 +603,14 @@
 	}
 
 	.in,
+	.when,
 	.versions {
 		color: inherit;
 		text-decoration: none;
 	}
 
 	.in:hover,
+	.when:hover,
 	.versions:hover {
 		color: var(--hue-z0-fg);
 	}

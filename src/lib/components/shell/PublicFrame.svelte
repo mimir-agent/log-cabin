@@ -30,7 +30,7 @@
 	}
 
 	.content {
-		max-inline-size: var(--measure-post);
+		max-inline-size: var(--column-post);
 		margin-inline: auto;
 		padding: var(--gap-2xl) var(--gap-lg);
 	}

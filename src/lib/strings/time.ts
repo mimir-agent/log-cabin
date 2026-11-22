@@ -25,10 +25,13 @@ export const time = {
 	/** The full date and time. */
 	long: (at: number, timeZone: string) =>
 		new Date(at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone }),
+	/** The time of day an instant falls on: "1:20 PM". A feed row's day is in the heading above it. */
+	clock: (at: number, timeZone: string) =>
+		new Date(at).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit', timeZone }),
 	/** Between chat runs more than half an hour apart: "1:20 PM", or "Nov 12 · 1:20 PM" before today. */
 	divider: (at: number, timeZone: string, now = Date.now()) => {
 		const date = new Date(at);
-		const clock = date.toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit', timeZone });
+		const clock = time.clock(at, timeZone);
 		if (calendarDay(at, timeZone) === calendarDay(now, timeZone)) return clock;
 		return `${date.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone })} · ${clock}`;
 	},

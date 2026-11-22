@@ -28,12 +28,15 @@
 		font-size: 1rem;
 	}
 
-	/* The long-form line, so a paragraph runs about 71 characters: notes and posts, in the editor
-	   and as read. A surface opts in with its data-size; a comment, which reads at the post's
-	   size without being long-form, and chat keep their column. */
-	.prose[data-size='note'],
-	.prose[data-size='post'] {
+	/* The reading line, in the editor and as read. A surface opts in with its data-size; a
+	   comment, which reads at the post's size without being long-form, and chat keep their
+	   column. A note holds the long-form line, a post the shorter one a message reads on. */
+	.prose[data-size='note'] {
 		max-inline-size: var(--measure-prose);
+	}
+
+	.prose[data-size='post'] {
+		max-inline-size: var(--measure-post);
 	}
 
 	.prose > * {

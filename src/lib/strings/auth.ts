@@ -129,6 +129,22 @@ export const auth = {
 			button: 'Choose a new password',
 			note: 'The link works once and expires in 30 minutes. Choosing a new password signs you out on every device. If you didn’t ask for this, you can ignore this email; your password hasn’t changed.'
 		},
+		/** PA-A1: to the new address, with the link that makes it the sign-in email. */
+		confirmEmail: {
+			subject: (orgName: string) => `Confirm your new email for ${orgName}`,
+			intro: (newEmail: string, orgName: string) =>
+				`Use this link to make ${newEmail} your sign-in email for ${orgName}.`,
+			button: 'Confirm email',
+			note: (hours: number) =>
+				`The link works once and expires in ${hours === 1 ? '1 hour' : `${hours} hours`}. If you didn’t ask for this, you can ignore this email; your sign-in email hasn’t changed.`
+		},
+		/** PA-A1: to the old address, after the change is confirmed. */
+		emailChanged: {
+			subject: (orgName: string) => `Your sign-in email for ${orgName} was changed`,
+			intro: (newEmail: string) => `Your sign-in email was changed to ${newEmail}.`,
+			button: (orgName: string) => `Open ${orgName}`,
+			note: 'If you didn’t make this change, tell an admin of your organization right away.'
+		},
 		invite: {
 			subject: (orgName: string) => `You’re invited to ${orgName}`,
 			intro: (inviterName: string, orgName: string) =>
@@ -164,12 +180,59 @@ export const auth = {
 		title: 'Your profile',
 		name: 'Display name',
 		avatar: 'Avatar',
-		email: 'Email',
 		save: 'Save profile',
 		saved: 'Profile saved.',
 		errors: {
 			nameMissing: 'Enter a display name.'
 		}
+	},
+	/** PA-A1: changing your sign-in email. The old address keeps working until the link is opened. */
+	emailChange: {
+		heading: 'Sign-in email',
+		change: 'Change email',
+		newEmail: 'New email address',
+		send: 'Send confirmation link',
+		cancel: 'Cancel',
+		sent: (newEmail: string, oldEmail: string) =>
+			`We sent a link to ${newEmail}. Open it to finish the change. Until then, keep signing in with ${oldEmail}.`,
+		pending: (newEmail: string) => `Waiting for you to confirm ${newEmail}.`,
+		resend: 'Send the link again',
+		confirmTitle: 'Confirm your new email',
+		confirmIntro: (newEmail: string) => `Select Confirm to make ${newEmail} your sign-in email.`,
+		confirm: 'Confirm',
+		doneTitle: 'Email changed',
+		done: (newEmail: string) => `Your sign-in email is now ${newEmail}.`,
+		continue: 'Continue',
+		errors: {
+			emailInvalid: 'Enter an email address like name@example.com.',
+			same: 'That’s already your sign-in email.',
+			taken: 'That email address can’t be used. Try another.',
+			rateLimited: 'Too many emails were requested. Wait 15 minutes, then try again.',
+			linkInvalid:
+				'This confirmation link has expired or has already been used. Send a new one from your profile settings.'
+		}
+	},
+	/** PA-A2: leaving the organization from account settings. */
+	leave: {
+		heading: 'Leave organization',
+		intro: 'Your posts and activity stay visible to other members.',
+		button: 'Leave organization',
+		title: (orgName: string) => `Leave ${orgName}?`,
+		body: 'Your posts and activity will still be visible to other members. You’ll be signed out, and you won’t be able to sign back in unless an admin reactivates you.',
+		confirm: 'Leave',
+		cancel: 'Cancel',
+		errors: {
+			lastAdmin: 'You’re the only admin. Make someone else an admin before you leave.'
+		}
+	},
+	/** PA-A3: what a member sees, and the refusal an API or form action returns, when the organization requires two-factor and they haven't set it up. */
+	twoFactorRequired: {
+		title: 'Set up two-factor authentication',
+		intro: (orgName: string) =>
+			`${orgName} requires everyone to use two-factor authentication. Set it up to keep using the app.`,
+		signOutNote: 'You can sign out without setting it up.',
+		refused:
+			'Your organization requires two-factor authentication. Set it up in Password and security to continue.'
 	},
 	images: {
 		errors: {
@@ -187,9 +250,14 @@ export const auth = {
 		google: 'Offer Google sign-in',
 		googleUnconfigured:
 			'Google sign-in also needs the GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets set on this deployment.',
+		/** PA-A3 */
+		requireTwoFactor: 'Require two-factor authentication',
+		requireTwoFactorHint:
+			'Everyone, you included, has to set up two-factor authentication before using the app. Members who haven’t are asked the next time they open it.',
 		save: 'Save settings',
 		saved: 'Settings saved.',
 		errors: {
+			notAdmin: 'Only an admin can change organization settings.',
 			nameMissing: 'Enter the organization’s name.',
 			domainInvalid: 'Enter a domain like example.com, without the @.'
 		}

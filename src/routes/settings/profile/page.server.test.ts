@@ -38,7 +38,7 @@ function save(who: SignedIn, fields: Record<string, string | File>) {
 	const body = new FormData();
 	for (const [name, value] of Object.entries(fields)) body.set(name, value);
 	const request = new Request('https://campfire.test/settings/profile', { method: 'POST', body });
-	return actions.default({ locals: who, url: new URL(request.url), request } as never);
+	return actions.saveProfile({ locals: who, url: new URL(request.url), request } as never);
 }
 
 function get(who: SignedIn | { user: null; member: null }, path: string) {

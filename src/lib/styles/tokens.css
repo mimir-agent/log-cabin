@@ -228,7 +228,7 @@
 		--safe-bottom: max(env(safe-area-inset-bottom), 8px);
 		/* Reading columns. The feed is 700px, a post or note 756px. */
 		--measure: 43.75rem;
-		--measure-post: 47.25rem;
+		--column-post: 47.25rem;
 
 		/* Motion. Colour and opacity change in 100ms; nothing else moves unless it explains
 		   where something came from. No frequent action animates for longer than --motion-slow,

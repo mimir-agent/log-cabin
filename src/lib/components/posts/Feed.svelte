@@ -43,7 +43,7 @@
 				</div>
 				<ul class="rows" role="list">
 					{#each group.items as item (item.id)}
-						<li><PostRow {item} {showProject} /></li>
+						<li><PostRow {item} {showProject} timeZone={page.data.timeZone} /></li>
 					{/each}
 				</ul>
 			</section>

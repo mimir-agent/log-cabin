@@ -217,19 +217,19 @@ for (const [profile, { use, touch }] of Object.entries(profiles)) {
 			}
 		});
 
-		test('long-form bodies hold 38em; comments and chat keep their column', async () => {
-			const measure = async (page: Page, selector: string, size: number) => {
+		test('a note holds 38em and a post 36em; comments and chat keep their column', async () => {
+			const measure = async (page: Page, selector: string, size: number, em: number) => {
 				const { maxWidth } = await styleOf(page.locator(selector).first(), 'maxWidth');
-				expect(maxWidth, selector).toBe(`${size * 38}px`);
+				expect(maxWidth, selector).toBe(`${size * em}px`);
 			};
 			const note = await openNote(context, notePath);
-			await measure(note, '.body .ProseMirror', 16);
+			await measure(note, '.body .ProseMirror', 16, 38);
 			const connecting = await openNoteConnecting(context, notePath);
-			await measure(connecting, '.painted .prose', 16);
+			await measure(connecting, '.painted .prose', 16, 38);
 
 			const post = await context.newPage();
 			await post.goto(postPath, { waitUntil: 'networkidle' });
-			await measure(post, '.prose[data-size="post"]', bodySize);
+			await measure(post, '.prose[data-size="post"]', bodySize, 36);
 			const comment = await context.newPage();
 			await comment.goto(`/posts/${posts.packing.id}`, { waitUntil: 'networkidle' });
 			expect(
@@ -243,11 +243,11 @@ for (const [profile, { use, touch }] of Object.entries(profiles)) {
 
 			const edit = await context.newPage();
 			await edit.goto(`${postPath}/edit`, { waitUntil: 'networkidle' });
-			await measure(edit, '.composer-card .ProseMirror', bodySize);
+			await measure(edit, '.composer-card .ProseMirror', bodySize, 36);
 
 			const draft = await context.newPage();
 			await draft.goto(`/projects/${project.id}/new`, { waitUntil: 'networkidle' });
-			await measure(draft, '.composer-card .ProseMirror', bodySize);
+			await measure(draft, '.composer-card .ProseMirror', bodySize, 36);
 			await draft.getByRole('textbox', { name: 'Title' }).fill('Type draft');
 			await draft.keyboard.press('Escape');
 			await expect(draft.getByText('Draft saved')).toBeVisible();
@@ -255,12 +255,12 @@ for (const [profile, { use, touch }] of Object.entries(profiles)) {
 			await draft.getByRole('link', { name: 'Type draft' }).first().click();
 			await draft.waitForURL(/\/drafts\//);
 			await draft.waitForLoadState('networkidle');
-			await measure(draft, '.composer-card .ProseMirror', bodySize);
+			await measure(draft, '.composer-card .ProseMirror', bodySize, 36);
 
 			if (!touch) {
 				await draft.goto(`/projects/${project.id}/new`, { waitUntil: 'networkidle' });
 				await draft.getByRole('button', { name: 'Expand' }).click();
-				await measure(draft, '.composer-card .ProseMirror', bodySize);
+				await measure(draft, '.composer-card .ProseMirror', bodySize, 36);
 				const prose = await draft.locator('.composer-card .ProseMirror').boundingBox();
 				const subject = await draft.locator('.composer-card .subject input').boundingBox();
 				const panel = await draft.getByRole('dialog').boundingBox();

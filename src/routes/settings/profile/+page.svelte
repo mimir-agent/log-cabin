@@ -18,6 +18,8 @@
 
 	let { data, form }: PageProps = $props();
 	const s = auth.ownProfile;
+	const e = auth.emailChange;
+	let editing = $state(false);
 
 	let theme = $state(untrack(() => data.theme));
 	let themeSaved = $state(false);
@@ -43,7 +45,7 @@
 	avatar={{ name: data.profile.name, src: data.profile.avatarUrl }}
 	tabs={accountTabs(page.url.pathname, data.calcomTab)}
 >
-	<form method="POST" enctype="multipart/form-data">
+	<form method="POST" action="?/saveProfile" enctype="multipart/form-data">
 		<SettingsSection title={data.profile.name}>
 			<div class="cover">
 				<ImagePicker
@@ -90,11 +92,6 @@
 							/>
 						{/snippet}
 					</SettingsField>
-					<SettingsField label={s.email}>
-						{#snippet children({ id })}
-							<input {id} type="email" readonly value={data.profile.email} />
-						{/snippet}
-					</SettingsField>
 				</div>
 			</div>
 			{#snippet footer()}
@@ -103,6 +100,29 @@
 			{/snippet}
 		</SettingsSection>
 	</form>
+
+	<SettingsSection
+		title={e.heading}
+		description={data.pendingEmail ? e.pending(data.pendingEmail) : data.profile.email}
+		footer={editing || data.pendingEmail || form?.emailMessage || form?.emailSent
+			? emailFooter
+			: undefined}
+	>
+		{#snippet actions()}
+			{#if !editing}
+				<Button type="button" onclick={() => (editing = true)}>{e.change}</Button>
+			{/if}
+		{/snippet}
+		{#if editing}
+			<form id="change-email" method="POST" action="?/changeEmail">
+				<SettingsField label={e.newEmail}>
+					{#snippet children({ id })}
+						<input {id} name="email" type="email" required autocomplete="email" />
+					{/snippet}
+				</SettingsField>
+			</form>
+		{/if}
+	</SettingsSection>
 
 	<SettingsSection
 		title={people.theme.label}
@@ -122,6 +142,22 @@
 		<Button type="submit">{auth.signOut}</Button>
 	</form>
 </SettingsFrame>
+
+{#snippet emailFooter()}
+	<FormStatus
+		message={form?.emailMessage}
+		saved={form?.emailSent ? e.sent(form.emailSent, data.profile.email) : undefined}
+	/>
+	{#if editing}
+		<Button type="button" onclick={() => (editing = false)}>{e.cancel}</Button>
+		<Button type="submit" form="change-email" variant="primary">{e.send}</Button>
+	{:else if data.pendingEmail}
+		<form method="POST" action="?/changeEmail">
+			<input type="hidden" name="email" value={data.pendingEmail} />
+			<Button type="submit">{e.resend}</Button>
+		</form>
+	{/if}
+{/snippet}
 
 {#snippet themeStatus()}
 	<FormStatus message={themeError} saved={themeSaved ? people.theme.saved : undefined} />

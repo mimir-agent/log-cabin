@@ -298,7 +298,13 @@ export async function feed(
 			authorAvatarKey: users.avatarKey,
 			projectId: projects.id,
 			projectName: projects.name,
-			commentCount: sql<number>`(SELECT count(*) FROM ${comments} WHERE ${comments.postId} = ${posts.id})`
+			commentCount: sql<number>`(SELECT count(*) FROM ${comments} WHERE ${comments.postId} = ${posts.id})`,
+			// The two people other than the author who commented most recently, newest first.
+			answerers: sql<string>`(SELECT json_group_array(json_object('id', id, 'name', name, 'avatarKey', avatar_key))
+				FROM (SELECT answerer.id, answerer.name, answerer.avatar_key
+					FROM ${comments} JOIN ${users} AS answerer ON answerer.id = ${comments.authorId}
+					WHERE ${comments.postId} = ${posts.id} AND answerer.id != ${posts.authorId}
+					GROUP BY answerer.id ORDER BY max(${comments.createdAt}) DESC LIMIT 2))`
 		})
 		.from(posts)
 		.innerJoin(projects, eq(projects.id, posts.projectId))
@@ -317,9 +323,15 @@ export async function feed(
 		)
 		.orderBy(desc(posts.lastActivityAt), desc(posts.id))
 		.limit(pageSize + 1);
-	const items = rows.slice(0, pageSize).map(({ authorAvatarKey, ...item }) => ({
+	const items = rows.slice(0, pageSize).map(({ authorAvatarKey, answerers, ...item }) => ({
 		...item,
-		authorAvatarUrl: authorAvatarKey ? getObjectUrl(authorAvatarKey) : null
+		authorAvatarUrl: authorAvatarKey ? getObjectUrl(authorAvatarKey) : null,
+		answerers: (
+			JSON.parse(answerers) as { id: string; name: string; avatarKey: string | null }[]
+		).map(({ avatarKey, ...person }) => ({
+			...person,
+			avatarUrl: avatarKey ? getObjectUrl(avatarKey) : null
+		}))
 	}));
 	const next = rows.length > pageSize ? cursorOf(items[items.length - 1]) : null;
 	return { items, next };

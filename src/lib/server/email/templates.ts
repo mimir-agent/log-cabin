@@ -85,3 +85,33 @@ export function joinDeniedMail(orgName: string) {
 		orgName
 	);
 }
+
+export function confirmEmailMail(orgName: string, newEmail: string, hours: number, link: string) {
+	const mail = auth.email.confirmEmail;
+	return renderEmail(
+		{
+			subject: mail.subject(orgName),
+			blocks: [
+				{ paragraph: mail.intro(newEmail, orgName) },
+				{ button: { label: mail.button, url: link } },
+				{ note: mail.note(hours) }
+			]
+		},
+		orgName
+	);
+}
+
+export function emailChangedMail(orgName: string, newEmail: string, link: string) {
+	const mail = auth.email.emailChanged;
+	return renderEmail(
+		{
+			subject: mail.subject(orgName),
+			blocks: [
+				{ paragraph: mail.intro(newEmail) },
+				{ button: { label: mail.button(orgName), url: link } },
+				{ note: mail.note }
+			]
+		},
+		orgName
+	);
+}

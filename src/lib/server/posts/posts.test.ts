@@ -209,6 +209,19 @@ describe('posts and the feed', () => {
 		expect(second.next).toBeNull();
 	});
 
+	it('names the people who answered a post, not its author', async () => {
+		const { env, member, admin, open } = await team();
+		const id = await createPost(env, member, open, post('Question'), 1000);
+		const loaded = await loadPost(env, member, id);
+		await createComment(env, admin, loaded, body('First'), null, 2000);
+		await createComment(env, member, loaded, body('Mine'), null, 3000);
+		await createComment(env, admin, loaded, body('Again'), null, 4000);
+
+		const [item] = (await feed(env, member, {})).items;
+		expect(item.commentCount).toBe(3);
+		expect(item.answerers.map((p) => p.id)).toEqual([admin.user.id]);
+	});
+
 	it('marks an edited post, and lets only its author edit it', async () => {
 		const { env, member, admin, open } = await team();
 		const id = await createPost(env, member, open, post('Draft'));

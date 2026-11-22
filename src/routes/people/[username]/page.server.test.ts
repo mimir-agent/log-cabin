@@ -42,7 +42,7 @@ function rename(who: SignedIn, username: string) {
 		method: 'POST',
 		body: new URLSearchParams({ name: who.user.name, username })
 	});
-	return ownProfile.default({ locals: who, url: new URL(request.url), request } as never);
+	return ownProfile.saveProfile({ locals: who, url: new URL(request.url), request } as never);
 }
 
 describe('/people/<username>', () => {

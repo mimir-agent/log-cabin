@@ -40,6 +40,12 @@ export const people = {
 			sick: 'Sick',
 			vacation: 'Vacationing'
 		},
+		/** PA-A5 */
+		pauseNotifications: 'Pause notifications while this status is set',
+		pauseHint:
+			'Nothing is pushed or emailed until the status clears. Anything you miss stays in your inbox.',
+		recent: 'Recent statuses',
+		recentNone: 'Your recent statuses will show up here.',
 		save: 'Save status',
 		clear: 'Clear status',
 		until: (time: string) => `until ${time}`,

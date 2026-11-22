@@ -171,6 +171,31 @@ export const notifications = {
 		/** iPhone or iPad in a Safari tab: push works only in the app added to the Home Screen. */
 		installFirst:
 			'On iPhone and iPad, push works only in the app on your Home Screen. Tap Share, then Add to Home Screen, then open the app from there and turn push on.',
+		/** PA-A5 */
+		test: 'Send a test push',
+		testSent: 'Sent. It should reach this device in a few seconds.',
+		testNone: 'This device isn’t subscribed. Turn on push first.',
+		testFailed: (detail: string) => `Couldn’t send a test push: ${detail}`,
+		testTitle: 'Test push',
+		testBody: 'Push notifications are working on this device.',
+		help: {
+			heading: 'Not getting push notifications?',
+			intro: 'Check these, then send a test push.',
+			iosHeading: 'iPhone and iPad',
+			ios: [
+				'Push works only in the app on your Home Screen. In Safari, tap Share, then Add to Home Screen.',
+				'Open the app from your Home Screen and turn on push here.',
+				'In Settings > Notifications, make sure the app is allowed to send notifications.'
+			],
+			androidHeading: 'Android',
+			android: [
+				'In Chrome, tap the ••• menu, then Add to Home screen or Install app.',
+				'Open the app and turn on push here.',
+				'In Settings > Apps, find the app and make sure its notifications are on.',
+				'If push arrives late, exempt the app from battery saver.'
+			],
+			stillStuck: 'Still nothing? Ask an admin to check that push is set up on this site.'
+		},
 		prompt: {
 			text: 'Get notifications on this device as well as in your inbox.',
 			enable: 'Turn on notifications',

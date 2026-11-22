@@ -67,6 +67,42 @@ export const invites = {
 		domainSetting: 'Domain setting',
 		gone: 'That request was already approved or denied.'
 	},
+	/** PA-A4: opening an invite link while signed in. */
+	join: {
+		joinAs: (name: string) => `Join as ${name}`,
+		intro: (orgName: string) => `You’re invited to join ${orgName}.`,
+		ask: 'Ask to join',
+		asked: (orgName: string) =>
+			`You’ve asked to join ${orgName}. An admin will review your request, and we’ll email you when they do.`,
+		switchAccount: 'Not you? Sign out',
+		errors: {
+			linkInvalid: 'This invite link has expired or been revoked. Ask an admin for a new one.'
+		}
+	},
+	/** PA-A4: the copyable invite link on the onboarding step and in invite settings. */
+	linkField: {
+		label: 'Invite link',
+		hint: 'Share this link with people you want to invite. They can join with their own email.',
+		copy: 'Copy link',
+		copied: 'Link copied.',
+		reset: 'Reset link',
+		resetTitle: 'Reset invite link?',
+		resetBody:
+			'The current link stops working and a new one takes its place. People who already joined stay.',
+		resetConfirm: 'Reset',
+		resetCancel: 'Cancel',
+		resetDone: 'The old link no longer works. Copy the new link below.'
+	},
+	/** PA-A4: the requester's own view of a join request. */
+	requestStatus: {
+		title: (orgName: string) => `Your request to join ${orgName}`,
+		pending: 'Waiting for an admin to decide. We’ll email you when they do.',
+		approved: 'An admin approved your request. Sign in to join.',
+		denied:
+			'An admin denied your request. If you think that’s a mistake, ask someone there for an invite.',
+		none: 'There’s no request to join from your account.',
+		asked: (ago: string) => `Asked ${ago}`
+	},
 	login: {
 		requested: (orgName: string) =>
 			`You’ve asked to join ${orgName}. An admin will review your request, and we’ll email you when they do.`,

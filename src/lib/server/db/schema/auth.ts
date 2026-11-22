@@ -14,6 +14,21 @@ export const passwordResetTokens = sqliteTable('password_reset_tokens', {
 	createdAt: integer('created_at').notNull()
 });
 
+export const emailChangeTokens = sqliteTable(
+	'email_change_tokens',
+	{
+		tokenHash: text('token_hash').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		newEmail: text('new_email').notNull(),
+		expiresAt: integer('expires_at').notNull(),
+		usedAt: integer('used_at'),
+		createdAt: integer('created_at').notNull()
+	},
+	(table) => [index('email_change_tokens_user').on(table.userId)]
+);
+
 export const recoveryCodes = sqliteTable('recovery_codes', {
 	codeHash: text('code_hash').primaryKey(),
 	userId: text('user_id')

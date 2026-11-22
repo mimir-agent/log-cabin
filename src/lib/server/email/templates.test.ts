@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { renderEmail } from './layout';
 import {
+	confirmEmailMail,
+	emailChangedMail,
 	inviteMail,
 	joinApprovedMail,
 	joinDeniedMail,
@@ -15,6 +17,13 @@ describe('emails', () => {
 	const every = {
 		signIn: signInMail('Acme', `${site}/login/verify?token=t1`),
 		reset: resetMail('Acme', `${site}/login/reset?token=t2`),
+		confirmEmail: confirmEmailMail(
+			'Acme',
+			'ada.new@example.com',
+			1,
+			`${site}/login/confirm-email?token=t4`
+		),
+		emailChanged: emailChangedMail('Acme', 'ada.new@example.com', site),
 		invite: inviteMail('Ada', 'Acme', `${site}/invite/t3`),
 		joinRequest: joinRequestMail(
 			{ name: 'Bo', email: 'bo@example.com' },

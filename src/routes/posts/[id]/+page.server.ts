@@ -38,6 +38,7 @@ import { canMovePost, movePost, moveTargets, visiblePostMoves } from '#lib/serve
 import { canSharePublicly, setPublicLink } from '#lib/server/posts/public-links.js';
 import { getOrg } from '#lib/server/org.js';
 import { viewerFollowUps } from '#lib/server/follow-ups.js';
+import { draftResolution } from '#lib/server/ai/resolution.js';
 import { postUnits, summarizePost, summaryOffer } from '#lib/server/ai/summaries.js';
 import { docResources, type DocNode } from '#lib/editor/doc.js';
 import { resourceTitles } from '#lib/server/search/resources.js';
@@ -203,6 +204,13 @@ export const actions: Actions = {
 		const { env, post } = await postAction(event);
 		const result = await summarizePost(env, post);
 		return 'error' in result ? fail(502, { summaryError: result.error }) : result;
+	},
+	draft: async (event) => {
+		const { env, post } = await postAction(event);
+		const result = await draftResolution(env, post);
+		return 'doc' in result
+			? { draft: result.doc }
+			: fail(result.status, { message: result.message });
 	},
 	move: async (event) => {
 		const { env, who, post, form } = await postAction(event);

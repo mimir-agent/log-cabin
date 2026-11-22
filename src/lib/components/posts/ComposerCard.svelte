@@ -250,7 +250,7 @@
 	   composer is wider than a line, so it centres that line in its panel. */
 	.subject input {
 		inline-size: 100%;
-		max-inline-size: var(--measure-prose);
+		max-inline-size: var(--measure-post);
 		padding: var(--gap-xs) 0 0;
 		border: 0;
 		background: transparent;

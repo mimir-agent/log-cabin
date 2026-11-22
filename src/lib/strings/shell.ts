@@ -21,6 +21,11 @@ export const shell = {
 		guests: 'Guests',
 		none: 'Nobody found'
 	},
+	/** PA-A6: shown in open tabs when a newer build is deployed. */
+	updateBanner: {
+		text: 'A new version is available',
+		refresh: 'Refresh'
+	},
 	unread: (count: number) => (count === 1 ? '1 unread' : `${count} unread`),
 	unreadDot: 'Unread',
 	/** Markers in the sidebar: Home has posts you haven't looked at, Activity has unseen items. */
