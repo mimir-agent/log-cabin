@@ -115,6 +115,7 @@
 		</label>
 		<Editor
 			name="body"
+			post
 			checklists
 			slash
 			bubble
@@ -242,15 +243,20 @@
 	.subject {
 		grid-area: subject;
 		display: grid;
+		padding-inline: var(--gap-md);
 	}
 
+	/* The subject sits on the body's line, so both start at the same edge. The full-size
+	   composer is wider than a line, so it centres that line in its panel. */
 	.subject input {
-		padding: var(--gap-xs) var(--gap-md) 0;
+		inline-size: 100%;
+		max-inline-size: var(--measure-prose);
+		padding: var(--gap-xs) 0 0;
 		border: 0;
 		background: transparent;
 		color: inherit;
 		font: inherit;
-		font-size: max(var(--type-prose), var(--type-control));
+		font-size: var(--type-prose);
 		font-weight: var(--fw-semibold);
 		line-height: 1.375;
 	}
@@ -265,6 +271,12 @@
 		min-block-size: 8rem;
 		padding: var(--gap-xs) var(--gap-md) var(--gap-sm);
 		cursor: text;
+	}
+
+	:global([data-fill]) .subject input,
+	:global([data-fill]) .composer-card :global(.editor .ProseMirror) {
+		inline-size: 100%;
+		margin-inline: auto;
 	}
 
 	.composer-card :global(.editor .note) {

@@ -100,8 +100,6 @@ describe('script/deploy', { timeout: 30_000 }, () => {
 	it.each([
 		['no arguments', [], 'campfire'],
 		['--no-build', ['--no-build'], 'campfire'],
-		['--env staging', ['--env', 'staging'], 'campfire-staging'],
-		['--env=staging', ['--env=staging'], 'campfire-staging'],
 		['--env test --no-build', ['--env', 'test', '--no-build'], 'campfire-test']
 	])('still deploys with %s, and the first deploy makes every secret', (_name, args, worker) => {
 		const world = sandbox('new-worker');
@@ -152,7 +150,6 @@ describe('script/deploy', { timeout: 30_000 }, () => {
 
 	it.each([
 		['production', []],
-		['staging', ['--env', 'staging']],
 		['test', ['--env', 'test']]
 	])('still puts the APP_URL secret on %s', (_name, args) => {
 		const world = sandbox('new-worker');
@@ -167,8 +164,11 @@ describe('script/deploy', { timeout: 30_000 }, () => {
 		expect(world.run(['--env', 'production']).status).toBe(2);
 		expect(world.run(['--env']).status).toBe(2);
 		expect(world.run(['--nope']).status).toBe(2);
-		expect(world.run(['--env', 'prod']).out).toContain(
-			'Expected --env staging, --env beta, --env test'
-		);
+		for (const name of ['prod', 'staging']) {
+			const refused = world.run(['--env', name]);
+			expect(refused.status).toBe(2);
+			expect(refused.out).toContain('Expected --env beta, --env test');
+			expect(refused.out).toContain('Usage: script/deploy [--env beta|test]');
+		}
 	});
 });

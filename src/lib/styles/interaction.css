@@ -77,11 +77,8 @@
 }
 
 @layer layout {
-	/* The rich editor writes in prose's size (prose.css), never under the control size. */
-	.ProseMirror.prose {
-		font-size: max(var(--type-prose), var(--type-control));
-	}
-
+	/* The rich editor writes in prose's size (prose.css), so what you type is what is read. The
+	   compact bodies, comments and chat, stay at the control size. */
 	.ProseMirror.prose[data-size='compact'] {
 		font-size: var(--type-control);
 	}

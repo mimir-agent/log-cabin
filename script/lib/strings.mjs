@@ -22,7 +22,7 @@ export const strings = {
 			'  --backup-to-r2         also upload the backup to the R2 bucket, under _backups/',
 			'  --keep-checkout        leave your checkout where it is',
 			'  --prebuilt <dir>       deploy an unpacked build instead of building one',
-			'  --env staging|test     update the staging or test deployment',
+			'  --env beta|test        update the beta or test deployment',
 			'  --rollback             go back to the Worker version from before the last update',
 			'  --restore-db           with --rollback, also restore the database to the bookmark'
 		],

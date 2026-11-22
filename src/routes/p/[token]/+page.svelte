@@ -37,7 +37,7 @@
 		<h1 class="title">{data.title}</h1>
 		<!-- No custom emoji: their images are for signed-in members, so :name: stays as typed. -->
 		<!-- No note cards: they are for members, who may open the notes. -->
-		<RichText doc={data.body} customEmoji={{}} {fileUrl} noteCards={false} />
+		<RichText post doc={data.body} customEmoji={{}} {fileUrl} noteCards={false} />
 		<p class="footer">{s.footer(data.createdAt, data.orgName, data.timeZone)}</p>
 	</article>
 </PublicFrame>

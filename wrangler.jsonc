@@ -16,7 +16,7 @@
 	"workers_dev": true,
 	"preview_urls": true,
 	// Logs keep request URLs without their query: the recording sink's URL carries its token.
-	// env.staging and env.test inherit this.
+	// env.beta and env.test inherit this.
 	"observability": { "enabled": true, "redact_query_string": true },
 	// script/deploy replaces the database_id below with the real one.
 	"d1_databases": [
@@ -59,40 +59,7 @@
 		"ATTACHMENT_MAX_MB": "25"
 	},
 	"env": {
-		"staging": {
-			"name": "campfire-staging",
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "campfire-staging",
-					"database_id": "00000000-0000-0000-0000-000000000000",
-					"migrations_dir": "migrations"
-				}
-			],
-			"r2_buckets": [{ "binding": "BUCKET", "bucket_name": "campfire-staging" }],
-			"queues": {
-				"producers": [{ "binding": "JOBS", "queue": "campfire-staging-jobs" }],
-				"consumers": [{ "queue": "campfire-staging-jobs", "max_batch_size": 10, "max_retries": 3 }]
-			},
-			"durable_objects": {
-				"bindings": [
-					{ "name": "REALTIME", "class_name": "RealtimeHub" },
-					{ "name": "RECORDING_SINK", "class_name": "RecordingSink" }
-				]
-			},
-			"migrations": [
-				{ "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
-				{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
-			],
-			"ai": { "binding": "AI" },
-			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
-			"vars": {
-				"EMAIL_TRANSPORT": "log",
-				"EMAIL_FROM": "Campfire Staging <campfire@example.com>",
-				"ATTACHMENT_MAX_MB": "25"
-			}
-		},
-		// A separate deployment for a small group of real people. It takes every merge, like staging, from the
+		// A separate deployment for a small group of real people. It takes every merge, from the
 		// same build. It has its own database, bucket, queue and secrets, and it is reached only on its own
 		// address: no workers.dev URL. Mail is logged.
 		"beta": {

@@ -31,8 +31,11 @@
 		/* Roles on top of suede's --text-* scale. Use the role, not the step. */
 		--type-caption: var(--text-xs); /* 12: timestamps, counts, metadata */
 		--type-body: var(--text-sm); /* 14: the interface */
-		--type-prose: 0.9375rem; /* 15: post, comment and note bodies. Between suede's 14 and 16:
-		                            14 is too small to read paragraphs in, 16 too loose for a feed. */
+		--type-prose: 0.9375rem; /* 15: post and comment bodies. Between suede's 14 and 16:
+		                            14 is too small to read paragraphs in, 16 too loose for a feed.
+		                            A note is 16 (prose.css); a touch screen reads everything at 16. */
+		--measure-prose: 38em; /* The long-form line: about 71 characters of Inter at any size
+		                          (0.533 em a character), inside the 65 to 75 a reader tracks easily. */
 		--type-title: var(--text-xl); /* 20: the page title */
 		--type-display: var(--text-3xl); /* 24 → 32: a post's own title on its page */
 		--type-control: var(--type-body); /* 14: text typed into fields and editors */
@@ -42,6 +45,7 @@
 	@media (pointer: coarse), (max-width: 40rem) {
 		:root {
 			--type-control: var(--text-md); /* 16 */
+			--type-prose: var(--text-md); /* 16: typed and read at the same size, with no zoom */
 		}
 	}
 }

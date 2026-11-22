@@ -7,12 +7,12 @@ modules: the core every module builds on, then one area per module as it lands.
 
 ```
 log-cabin/
-├── wrangler.jsonc          # the one Worker: bindings, crons, staging, beta and test envs
+├── wrangler.jsonc          # the one Worker: bindings, crons, beta and test envs
 ├── migrations/             # hand-written D1 SQL; numbers are reserved ahead, one per planned change
 │                           # (0002–0026 so far), so a module may own several (calls: 0009, 0011);
 │                           # a second file within one change is 00NN_b_<name>.sql
 ├── script/deploy           # provisions D1/R2/queue, migrates, sets secrets, deploys
-├── script/rollback         # puts an earlier Worker version back on staging or beta (code only)
+├── script/rollback         # puts an earlier Worker version back on the beta (code only)
 ├── script/restore          # loads a beta backup into a database of its own
 ├── script/backup/          # the beta database's backup Worker; script/backup-deploy ships it
 ├── script/reindex          # rebuilds the search index from the tables
@@ -40,7 +40,7 @@ For: One deployable Worker that serves pages, consumes background jobs, runs cro
 Lives at: `src/worker.ts`, `wrangler.jsonc`, `src/lib/server/platform.ts`, `vite.config.ts`
 Why this shape: adapter-cloudflare writes its handler to whatever `main` it reads, so `vite.config.ts` gives it a generated config pointing at `.svelte-kit/cloudflare/_worker.js`, and `wrangler.jsonc` aliases that file as `sveltekit-worker` for `src/worker.ts` to wrap.
 Seams: New queue consumers go in `handlers` and crons in `crons` (`src/lib/server/jobs/index.ts`); new Durable Object classes are exported from `src/worker.ts` and declared in `wrangler.jsonc`.
-Fragile: Bindings reach app code only through `getEnv()` (`cloudflare:workers`); `event.platform` is undefined under this adapter. Files imported by `src/worker.ts` must use relative imports, since wrangler's bundler doesn't resolve `#lib`. `env.staging`, `env.beta` and `env.test` repeat every binding; a binding added at the top level must be added to all three. Cron strings in `wrangler.jsonc` must match the keys of `crons` exactly, or `runCron` throws.
+Fragile: Bindings reach app code only through `getEnv()` (`cloudflare:workers`); `event.platform` is undefined under this adapter. Files imported by `src/worker.ts` must use relative imports, since wrangler's bundler doesn't resolve `#lib`. `env.beta` and `env.test` repeat every binding; a binding added at the top level must be added to both. Cron strings in `wrangler.jsonc` must match the keys of `crons` exactly, or `runCron` throws.
 
 ### Data
 

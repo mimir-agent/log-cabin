@@ -17,7 +17,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-	echo 'Usage: script/rollback --env staging|beta [--list | <version-id>]' >&2
+	echo 'Usage: script/rollback --env beta [--list | <version-id>]' >&2
 	exit "$1"
 }
 
@@ -52,9 +52,9 @@ while [ $# -gt 0 ]; do
 	esac
 done
 case "$env" in
-staging | beta) ;;
+beta) ;;
 *)
-	echo "Expected --env staging or --env beta; got --env ${env:-nothing}" >&2
+	echo "Expected --env beta; got --env ${env:-nothing}" >&2
 	usage 2
 	;;
 esac

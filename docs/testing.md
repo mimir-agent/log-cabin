@@ -1,6 +1,6 @@
 # Testing
 
-Automated tests, probes and audits run in one of three places. Staging and production are never used for tests: real people use them, and a test that posts, comments or sends mail there leaves its mess in their inboxes.
+Automated tests, probes and audits run in one of three places. The beta and production are never used for tests: real people use them, and a test that posts, comments or sends mail there leaves its mess in their inboxes.
 
 ## Where tests run
 
@@ -27,7 +27,7 @@ campfire-test is its own Worker, with its own D1 database, R2 bucket and queue. 
 
 ## Sign in on campfire-test
 
-1. Set a mailbox token on the test Worker once: `pnpm wrangler secret put MAIL_VIEWER_TOKEN --env test`. Use a value of its own, never staging's.
+1. Set a mailbox token on the test Worker once: `pnpm wrangler secret put MAIL_VIEWER_TOKEN --env test`. Use a value of its own, never the beta's.
 2. Ask for a sign-in link for one of the people above on the sign-in page.
 3. Open `/__mail?token=<the token>` on the same Worker and follow the link in the newest message.
 
@@ -40,4 +40,4 @@ scripts/reset-test.sh --local      # local wrangler dev
 
 The reset applies any new migrations, empties every app table and seeds the org again. It keeps the migration history. Files in R2 and saved live-note documents stay, but the new rows have new ids, so nothing points at them.
 
-Both scripts refuse a remote database that isn't `campfire-test` and stop before contacting Cloudflare, so `--env staging` and a bare run (production) fail with an error.
+Both scripts refuse a remote database that isn't `campfire-test` and stop before contacting Cloudflare, so `--env beta` and a bare run (production) fail with an error.

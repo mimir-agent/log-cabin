@@ -3,7 +3,7 @@
 # Triggers keep it current; run this after restoring data or if search results look stale.
 #
 #   script/reindex                 production
-#   script/reindex --env staging   staging
+#   script/reindex --env beta      the beta
 #   script/reindex --local         the local development database
 #
 # Environment:
@@ -26,7 +26,7 @@ while [ $# -gt 0 ]; do
 		shift
 		;;
 	*)
-		echo "Unknown argument: $1 (expected --env staging or --local)" >&2
+		echo "Unknown argument: $1 (expected --env beta or --local)" >&2
 		exit 2
 		;;
 	esac

@@ -390,6 +390,7 @@
 
 			<div class="body">
 				<RichText
+					post
 					doc={post.body}
 					customEmoji={orgEmoji.custom}
 					image={canvasImage}

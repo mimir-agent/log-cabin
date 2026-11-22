@@ -328,13 +328,10 @@
 			/>
 		{/if}
 
-		<div class="body" bind:this={noteBody}>
-			{#if status === 'connecting'}
-				<RichText doc={note.body} customEmoji={orgEmoji.custom} note resources={data.resources} />
-			{/if}
+		<div class="body" bind:this={noteBody} data-connecting={status === 'connecting' || undefined}>
 			{#if live}
 				{#key live}
-					<div hidden={status === 'connecting'}>
+					<div>
 						<Editor
 							name="body"
 							checklists
@@ -346,11 +343,16 @@
 							placeholder={notes.editor.bodyPlaceholder}
 							members={data.people}
 							resources={data.resources}
-							disabled={!data.live.canWrite}
+							disabled={!data.live.canWrite || status === 'connecting'}
 							uploadUrl={data.live.canWrite ? `/notes/${note.id}/attachments` : undefined}
 						/>
 					</div>
 				{/key}
+			{/if}
+			{#if status === 'connecting'}
+				<div class="painted">
+					<RichText doc={note.body} customEmoji={orgEmoji.custom} note resources={data.resources} />
+				</div>
 			{/if}
 			{#if data.canDiscuss && passageTools && status !== 'connecting'}
 				<div
@@ -571,6 +573,16 @@
 	   someone's caret there isn't hidden behind them. */
 	.body :global(.editor .content) {
 		min-block-size: 12rem;
+		padding: var(--gap-lg) 0 0;
+	}
+
+	/* Until the editor connects, its tools show above the text as read, which sits where the
+	   editor's text will, so nothing moves when it takes over. */
+	.body[data-connecting] :global(.editor .content) {
+		display: none;
+	}
+
+	.painted {
 		padding: var(--gap-lg) 0 0;
 	}
 

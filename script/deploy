@@ -2,7 +2,6 @@
 # Provision and deploy Campfire to Cloudflare. Safe to re-run: it creates only what is missing.
 #
 #   script/deploy                 production (names from the top of wrangler.jsonc)
-#   script/deploy --env staging   staging (names from env.staging in wrangler.jsonc)
 #   script/deploy --env beta      the beta deployment, on its own address (names from env.beta)
 #   script/deploy --env test      the test deployment, for automated tests (names from env.test)
 #   script/deploy --no-build      deploy the build already in .svelte-kit (for example one made by CI)
@@ -16,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-	echo 'Usage: script/deploy [--env staging|beta|test] [--no-build]' >&2
+	echo 'Usage: script/deploy [--env beta|test] [--no-build]' >&2
 	exit "$1"
 }
 
@@ -45,9 +44,9 @@ while [ $# -gt 0 ]; do
 	esac
 done
 case "$env" in
-'' | staging | beta | test) ;;
+'' | beta | test) ;;
 *)
-	echo "Expected --env staging, --env beta, --env test or no --env; got --env $env" >&2
+	echo "Expected --env beta, --env test or no --env; got --env $env" >&2
 	usage 2
 	;;
 esac

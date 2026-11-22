@@ -6,7 +6,7 @@ async function config(env: string | undefined) {
 }
 
 describe('wrangler.jsonc', () => {
-	it.each([undefined, 'staging', 'test'])(
+	it.each([undefined, 'beta', 'test'])(
 		'records request URLs without their query string, so no sink token is logged (env %s)',
 		async (env) => {
 			expect((await config(env)).observability).toMatchObject({
@@ -16,7 +16,7 @@ describe('wrangler.jsonc', () => {
 		}
 	);
 
-	it.each([undefined, 'staging', 'test'])('deploys the recording sink (env %s)', async (env) => {
+	it.each([undefined, 'beta', 'test'])('deploys the recording sink (env %s)', async (env) => {
 		const { durable_objects, migrations } = await config(env);
 
 		expect(durable_objects.bindings).toContainEqual({

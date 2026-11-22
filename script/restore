@@ -4,7 +4,7 @@
 #   script/restore <backup.sql.gz> <database-name>
 #
 # Makes the database if it is missing, applies the migrations, loads the backup and rebuilds the search index.
-# It never writes into a deployment's own database: campfire, campfire-staging, campfire-test and campfire-beta
+# It never writes into a deployment's own database: campfire, campfire-test and campfire-beta
 # are refused. To switch a deployment over, point its database_id in wrangler.jsonc at the restored database
 # and deploy. To rewind in place instead, use D1 Time Travel (docs/beta.md).
 #
@@ -22,7 +22,7 @@ backup="$1"
 database="$2"
 [ -f "$backup" ] || { echo "Expected a backup file; $backup is not a file." >&2; exit 2; }
 case "$database" in
-campfire | campfire-staging | campfire-test | campfire-beta)
+campfire | campfire-test | campfire-beta)
 	echo "Refusing to load a backup into $database: restore into a database of its own." >&2
 	exit 2
 	;;

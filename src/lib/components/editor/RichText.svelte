@@ -30,6 +30,8 @@
 		customEmoji: Record<string, string>;
 		compact?: boolean;
 		note?: boolean;
+		/** A post's body: the long-form line at the base size. */
+		post?: boolean;
 		/** Draws each image instead of a plain <img>, e.g. with comments pinned to it. */
 		image?: Snippet<[{ src: string; alt: string }]>;
 		/** Ticks or clears the index-th task item; without it checkboxes are read-only. */
@@ -55,6 +57,7 @@
 		customEmoji,
 		compact = false,
 		note = false,
+		post = false,
 		image,
 		ontick,
 		tags = false,
@@ -253,7 +256,11 @@
 	{/if}
 {/snippet}
 
-<div class="prose" data-size={compact ? 'compact' : note ? 'note' : undefined} bind:this={prose}>
+<div
+	class="prose"
+	data-size={compact ? 'compact' : note ? 'note' : post ? 'post' : undefined}
+	bind:this={prose}
+>
 	{#if doc.type === 'doc'}
 		{#each withGalleries(doc.content ?? []) as block, i (i)}
 			{#if 'images' in block}

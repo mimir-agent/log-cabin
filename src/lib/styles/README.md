@@ -35,11 +35,14 @@ Pick the surface, then stay in its set. Each has `bg`, `fg`, `muted` and `border
 | `--hue-hover`, `--hue-pressed`        | Background of a row or button under pointer / press |
 | `--hue-selected`                      | The current row, the current nav item               |
 | `--hue-accent`, `--hue-accent-fg`     | Primary button fill and its text                    |
-| `--hue-accent-subtle`                 | Mentions, selected text, a highlighted row          |
+| `--hue-accent-subtle`                 | Mentions, a highlighted row                         |
 | `--hue-unread`                        | Unread dots and counts                              |
 | `--hue-danger`, `--hue-danger-subtle` | Destructive actions and errors                      |
 | `--hue-success`, `--hue-warning`      | Status text and icons                               |
 | `--hue-focus-ring`                    | Already applied to `:focus-visible`; don't restyle  |
+| `--hue-caret`                         | The caret of a writing surface; it has no ring      |
+| `--hue-selection`                     | Selected text (applied to `::selection`)            |
+| `--hue-field-edge-focus`              | A field's edge while focused; a quote's bar         |
 | `--hue-link`                          | Links inside text; links in the interface use `fg`  |
 
 Light and dark follow the system. To force one, set `data-theme="light"` or `data-theme="dark"`
@@ -58,20 +61,21 @@ server to write at first paint, and `applyTheme()` to switch the open page in on
 
 ## Type
 
-| Token            | Size     | Use for                                       |
-| ---------------- | -------- | --------------------------------------------- |
-| `--type-caption` | 12       | Timestamps, counts, metadata                  |
-| `--type-body`    | 14       | The interface: rows, buttons, labels          |
-| `--type-prose`   | 15       | Bodies of posts, comments and notes           |
-| `--type-title`   | 20       | A title inside the content (settings section) |
-| `--type-display` | 24 to 32 | A post's or note's own title on its page      |
+| Token             | Size     | Use for                                       |
+| ----------------- | -------- | --------------------------------------------- |
+| `--type-caption`  | 12       | Timestamps, counts, metadata                  |
+| `--type-body`     | 14       | The interface: rows, buttons, labels          |
+| `--type-prose`    | 15       | Bodies of posts, comments and notes           |
+| `--measure-prose` | 38em     | The long-form line: a post or note body       |
+| `--type-title`    | 20       | A title inside the content (settings section) |
+| `--type-display`  | 24 to 32 | A post's or note's own title on its page      |
 
 Set line height where you set the size: `--leading-ui` (1) for one line inside a control,
 `--leading-tight` for headings and dense single lines, `--leading-loose` for anything that wraps.
 Weight: regular almost everywhere, `--fw-medium` for a person's or post's name in a list,
 `--fw-semibold` for titles. `<time>` and `.u:tabular` get tabular figures.
 
-Wrap anything people wrote in `.prose`. Use `data-size="compact"` for comments and chat.
+Wrap anything people wrote in `.prose`. Use `data-size="compact"` for comments and chat. A post's body takes `data-size="post"` and a note's `data-size="note"`; only those two hold the `--measure-prose` line.
 
 The page header names the screen at interface size (14px semibold), the way dense apps do. Titles
 inside the content use the utilities `u:type-display` (a post's or note's own title) and

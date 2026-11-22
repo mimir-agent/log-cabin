@@ -35,9 +35,9 @@ script/deploy
 
 You can run it again safely. It skips anything that already exists.
 
-`script/deploy --env staging` deploys a separate Worker, `campfire-staging`, with its own database, bucket and queue. `script/deploy --env test` does the same for `campfire-test`, the deployment automated tests run against (see [docs/testing.md](docs/testing.md)).
+`script/deploy --env beta` deploys a separate Worker, `campfire-beta`, with its own database, bucket and queue (see [docs/beta.md](docs/beta.md)). `script/deploy --env test` does the same for `campfire-test`, the deployment automated tests run against (see [docs/testing.md](docs/testing.md)).
 
-`script/deploy --no-build` skips `pnpm build` and deploys what is already in `.svelte-kit`. CI uploads its build of each commit as the `staging-build` artifact. Unpack it into `.svelte-kit/` in a checkout of the same commit, then run `pnpm install --frozen-lockfile` and `script/deploy --env staging --no-build`. Before it contacts Cloudflare, `--no-build` checks that the Worker and server files in `.svelte-kit` (under `cloudflare/`, `cloudflare-tmp/` and `output/`) are there and not empty, and that the client assets are in `cloudflare/_app/`. Before any deploy applies migrations, it bundles the Worker without uploading it and starts it locally with `wrangler check startup`. A build that won't bundle, or a Worker that fails at startup, stops before the database changes.
+`script/deploy --no-build` skips `pnpm build` and deploys what is already in `.svelte-kit`. CI uploads its build of each commit as the `staging-build` artifact. Unpack it into `.svelte-kit/` in a checkout of the same commit, then run `pnpm install --frozen-lockfile` and `script/deploy --env beta --no-build`. Before it contacts Cloudflare, `--no-build` checks that the Worker and server files in `.svelte-kit` (under `cloudflare/`, `cloudflare-tmp/` and `output/`) are there and not empty, and that the client assets are in `cloudflare/_app/`. Before any deploy applies migrations, it bundles the Worker without uploading it and starts it locally with `wrangler check startup`. A build that won't bundle, or a Worker that fails at startup, stops before the database changes.
 
 ## Deploy to Cloudflare button
 
@@ -66,7 +66,7 @@ To send with Resend, add and verify your domain in Resend, then create an API ke
 
 Log Cabin emails sign-in and password reset links, invites, join requests and their answers, notifications still unread after 10 minutes, and the daily and weekly digests. Each member chooses which notifications reach them by email, and whether and when digests come, under **Notifications**.
 
-With `log`, you can read the stored mail at `/__mail?token=...` if you set the `MAIL_VIEWER_TOKEN` secret and pass the same value as `token`. Without that secret, `/__mail` stays closed. Use it on staging and the test deployment only. Never set `MAIL_VIEWER_TOKEN` in production.
+With `log`, you can read the stored mail at `/__mail?token=...` if you set the `MAIL_VIEWER_TOKEN` secret and pass the same value as `token`. Without that secret, `/__mail` stays closed. Use it on the beta and the test deployment only. Never set `MAIL_VIEWER_TOKEN` in production.
 
 Set a secret with:
 
@@ -74,7 +74,7 @@ Set a secret with:
 pnpm wrangler secret put NAME
 ```
 
-Add `--env staging` to set it on the staging Worker.
+Add `--env beta` to set it on the beta Worker.
 
 ## Optional
 
@@ -164,7 +164,7 @@ Search keeps itself up to date as people write. If you restore the database from
 
 ```sh
 script/reindex                 # production
-script/reindex --env staging   # staging
+script/reindex --env beta      # the beta
 script/reindex --local         # your local database
 ```
 

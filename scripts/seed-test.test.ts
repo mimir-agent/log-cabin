@@ -42,7 +42,7 @@ describe.each(['scripts/reset-test.sh', 'scripts/seed-test.js'])('%s', (script) 
 	const command = script.endsWith('.js') ? ['node', script] : [script];
 
 	it.each([
-		[['--env', 'staging'], 'campfire-staging'],
+		[['--env', 'beta'], 'campfire-beta'],
 		[[], 'campfire']
 	])('refuses %j (%s) without calling wrangler', (args, database) => {
 		const { status, stderr, calls } = run(command[0], [...command.slice(1), ...args]);

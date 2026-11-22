@@ -34,6 +34,8 @@
 		compact?: boolean;
 		/** A note's document: prose at 16px with Campsite's larger note headings. */
 		note?: boolean;
+		/** A post's body: the long-form line at the base size. */
+		post?: boolean;
 		/**
 		 * The formatting buttons and the link popover. Campsite's comment box has none: its footer
 		 * holds attachments only, and formatting comes from Markdown and the usual shortcuts.
@@ -94,6 +96,7 @@
 		value = null,
 		compact = false,
 		note = false,
+		post = false,
 		formatting = true,
 		bubble = false,
 		toolbarLast = false,
@@ -196,6 +199,8 @@
 		type: 'kbd',
 		toggle: (c) => c.toggleMark('kbd')
 	};
+	const size = $derived(compact ? 'compact' : note ? 'note' : post ? 'post' : undefined);
+
 	/** What only a note offers: keyboard keys and collapsible sections. */
 	const noteTools = $derived(note ? [kbd, details] : []);
 	const tools = $derived(
@@ -275,7 +280,7 @@
 				attributes: () => ({
 					'aria-label': placeholder,
 					class: 'prose',
-					...(compact ? { 'data-size': 'compact' } : note ? { 'data-size': 'note' } : {})
+					...(size ? { 'data-size': size } : {})
 				}),
 				handlePaste: (_view, event) => uploadFrom(event.clipboardData?.files),
 				handleDrop: (view, event, _slice, moved) => !moved && dropFiles(view, event),
@@ -759,6 +764,7 @@
 
 	.content {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		min-block-size: calc(var(--gap-xl) * 6);
 		padding: var(--gap-md);
 	}
