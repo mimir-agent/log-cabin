@@ -48,6 +48,16 @@ export type ResourceTitles = Record<string, { title: string; url: string }>;
 
 const resourceId = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
+/** Whether the runtime knows `value` as a time zone name. */
+function isTimeZone(value: unknown): boolean {
+	try {
+		new Intl.DateTimeFormat('en', { timeZone: String(value) });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export function isResourceKind(value: unknown): value is ResourceKind {
 	return resourceKinds.includes(value as ResourceKind);
 }
@@ -96,8 +106,8 @@ const nodeAttrs: Record<string, string[]> = {
 	detailsSummary: [],
 	detailsContent: [],
 	mention: ['id', 'label'],
-	// A date and time, by its instant in milliseconds; readers see it relative to now.
-	relativeTime: ['timestamp'],
+	// A date and time, by its instant and the zone it was written in; readers see it on their own clock.
+	relativeTime: ['timestamp', 'zone'],
 	// A note, post or call, by kind and id only: each reader's page looks up the title, if they
 	// may see it (resourceTitles), since titles change and readers differ.
 	resourceMention: ['kind', 'id'],
@@ -163,6 +173,9 @@ function sanitizeNode(node: DocNode, path: string): DocNode {
 		throw new DocError(
 			`expected a timestamp in whole milliseconds at ${path}, got ${attrs?.timestamp}`
 		);
+	}
+	if (node.type === 'relativeTime' && attrs?.zone != null && !isTimeZone(attrs.zone)) {
+		throw new DocError(`expected a time zone name at ${path}, got ${attrs.zone}`);
 	}
 	if (
 		node.type === 'resourceMention' &&

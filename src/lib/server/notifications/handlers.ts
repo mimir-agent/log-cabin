@@ -9,7 +9,13 @@ import { notes as noteStrings } from '../../strings/notes';
 import { notifications as noticeStrings } from '../../strings/notifications';
 import type { ContentKind, DomainEventKind, JobMessage } from '../events';
 import { readThreadNaming, threadNaming } from '../chat/threads';
-import { notify, reactionSource, reactionsItemKey, type NewNotification } from './notify';
+import {
+	notify,
+	projectItemKey,
+	reactionSource,
+	reactionsItemKey,
+	type NewNotification
+} from './notify';
 import type { Facts } from './summary';
 
 export type HandlerFor<K extends DomainEventKind> = (
@@ -141,7 +147,6 @@ async function reactionEmoji(env: Env, subjectType: ContentKind, reactionId: str
 const postUrl = (postId: string) => `/posts/${postId}`;
 const commentUrl = (postId: string, commentId: string) => `/posts/${postId}#comment-${commentId}`;
 const projectUrl = (projectId: string) => `/projects/${projectId}`;
-const projectItemKey = (projectId: string) => `project:${projectId}`;
 
 async function nameOf(env: Env, userId: string) {
 	const { users } = schema;

@@ -47,19 +47,29 @@ describe('sanitizeDoc', () => {
 		expect(() => sanitizeDoc('not json')).toThrow('expected the body to be JSON');
 	});
 
-	it('keeps a date and time only as whole milliseconds, and reads it as the date in UTC', () => {
-		const at = (timestamp: unknown) => doc(para({ type: 'relativeTime', attrs: { timestamp } }));
-		const kept = sanitizeDoc(at(Date.UTC(2026, 10, 23, 15, 0)));
+	it('keeps a date and time as whole milliseconds with the zone it was written in, and reads it as the date in UTC', () => {
+		const at = (attrs: object) => doc(para({ type: 'relativeTime', attrs }));
+		const instant = Date.UTC(2026, 10, 23, 15, 0);
+		const kept = sanitizeDoc(at({ timestamp: instant, zone: 'Asia/Tokyo' }));
 		expect(kept.content?.[0].content?.[0]).toEqual({
 			type: 'relativeTime',
-			attrs: { timestamp: Date.UTC(2026, 10, 23, 15, 0) }
+			attrs: { timestamp: instant, zone: 'Asia/Tokyo' }
 		});
 		expect(docText(kept)).toBe('Monday, November 23, 2026 at 3:00 PM UTC');
+		expect(
+			sanitizeDoc(at({ timestamp: instant })).content?.[0].content?.[0].attrs,
+			'zone is optional'
+		).toEqual({
+			timestamp: instant
+		});
 		for (const timestamp of ['1700000000000', 1.5, null, Number.NaN]) {
-			expect(() => sanitizeDoc(at(timestamp)), `refuses ${timestamp}`).toThrow(
+			expect(() => sanitizeDoc(at({ timestamp })), `refuses ${timestamp}`).toThrow(
 				'expected a timestamp in whole milliseconds at doc.content[0].content[0]'
 			);
 		}
+		expect(() => sanitizeDoc(at({ timestamp: instant, zone: 'Mars/Olympus' }))).toThrow(
+			'expected a time zone name at doc.content[0].content[0], got Mars/Olympus'
+		);
 	});
 
 	it('keeps a mention of a note, post or call only by kind and id, never a title', () => {

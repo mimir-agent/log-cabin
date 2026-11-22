@@ -4,18 +4,22 @@ import {
 	eq,
 	inArray,
 	isNull,
+	not,
 	or,
 	sql,
 	type SQL,
 	type SQLWrapper
 } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
-import { QueryBuilder } from 'drizzle-orm/sqlite-core';
+import { QueryBuilder, type SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { visibleCalls } from '../calls/history';
 import { db, schema } from '../db';
+import type { Role } from '../db/schema';
 import type { FollowUpSubject } from '../db/schema/follow-ups';
 import type { NotificationKind } from '../db/schema/notifications';
 import { followUpItemKey } from '../follow-ups';
 import { newId } from '../id';
+import { visibleNoteIds } from '../notes/access';
 import { feedbackItemKey } from '../posts/feedback';
 import { publish } from '../realtime/publish';
 import { sendPush } from '../push/webpush';
@@ -252,6 +256,75 @@ function notificationsAbout(deleted: DeletedContent): SQL {
 		inArray(n.itemKey, reminderKeys('post', [post])),
 		inArray(n.itemKey, reminderKeys('comment', commentIds(eq(comments.postId, post))))
 	)!;
+}
+
+/** The inbox item of being added to a project. */
+export const projectItemKey = (projectId: string) => `project:${projectId}`;
+
+/**
+ * Deletes one person's notifications about a project they were taken off: the one that added
+ * them, and, with `content`, those about its posts, notes and calls that they can no longer see.
+ * Run it after their membership is deleted, in the same batch, so the SQL sees them as a
+ * non-member. Ids are selected in SQL, never bound. A future "make private" action must run
+ * this with `content` for every non-member.
+ */
+export function discardProjectNotifications(
+	env: Env,
+	person: { user: { id: string }; member: { role: Role } },
+	projectId: string,
+	{ content }: { content: boolean }
+) {
+	const {
+		notifications: n,
+		posts,
+		comments,
+		notes,
+		calls,
+		postFeedbackRequests: requests
+	} = schema;
+	const postIds = subquery
+		.select({ id: posts.id })
+		.from(posts)
+		.where(eq(posts.projectId, projectId));
+	const hiddenNotes = and(eq(notes.projectId, projectId), not(visibleNoteIds(person)));
+	const hiddenNoteIds = subquery.select({ id: notes.id }).from(notes).where(hiddenNotes);
+	const hiddenCallIds = subquery
+		.select({ id: calls.id })
+		.from(calls)
+		.where(and(eq(calls.projectId, projectId), sql`NOT coalesce(${visibleCalls(env, person)}, 0)`));
+	const itemsOf = (prefix: string, id: SQLWrapper, table: SQLiteTable, where: SQL | undefined) =>
+		inArray(
+			n.itemKey,
+			subquery
+				.select({ key: prefixed(prefix, id) })
+				.from(table)
+				.where(where)
+		);
+	const about = or(
+		itemsOf('post:', posts.id, posts, eq(posts.projectId, projectId)),
+		itemsOf(reactionsItemKey('post', ''), posts.id, posts, eq(posts.projectId, projectId)),
+		itemsOf(
+			reactionsItemKey('comment', ''),
+			comments.id,
+			comments,
+			inArray(comments.postId, postIds)
+		),
+		itemsOf(feedbackItemKey(''), requests.id, requests, inArray(requests.postId, postIds)),
+		inArray(n.itemKey, reminderKeys('post', postIds)),
+		inArray(n.itemKey, reminderKeys('comment', commentIds(inArray(comments.postId, postIds)))),
+		itemsOf('note:', notes.id, notes, hiddenNotes),
+		itemsOf(reactionsItemKey('note', ''), notes.id, notes, hiddenNotes),
+		inArray(n.itemKey, reminderKeys('note', hiddenNoteIds)),
+		inArray(n.itemKey, reminderKeys('call', hiddenCallIds))
+	);
+	return db(env)
+		.delete(n)
+		.where(
+			and(
+				eq(n.userId, person.user.id),
+				or(eq(n.itemKey, projectItemKey(projectId)), content ? about : undefined)
+			)
+		);
 }
 
 const subquery = new QueryBuilder();

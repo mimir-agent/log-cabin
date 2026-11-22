@@ -121,7 +121,7 @@ export function canDiscussNote(who: SignedIn): boolean {
 }
 
 /** A condition on notes.id: the notes this member can see. Search filters with it too. */
-export function visibleNoteIds(who: SignedIn): SQL {
+export function visibleNoteIds(who: { user: { id: string }; member: { role: Role } }): SQL {
 	const { notes, noteShares, projects } = schema;
 	const sharedByName = sql`${notes.id} IN (SELECT ${noteShares.noteId} FROM ${noteShares} WHERE ${noteShares.userId} = ${who.user.id})`;
 	const sharedByProject = and(

@@ -30,7 +30,10 @@ describe('documentSchema', () => {
 					{ type: 'codeBlock', content: [text('plain')] },
 					paragraph(
 						text('Meet '),
-						{ type: 'relativeTime', attrs: { timestamp: Date.UTC(2026, 10, 23, 15, 0) } },
+						{
+							type: 'relativeTime',
+							attrs: { timestamp: Date.UTC(2026, 10, 23, 15, 0), zone: 'Asia/Tokyo' }
+						},
 						text(' about '),
 						{ type: 'resourceMention', attrs: { kind: 'post', id: '01JD5Z3W8Q9X2M4N6P7R8S9T0V' } }
 					)

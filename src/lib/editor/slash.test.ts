@@ -78,9 +78,10 @@ describe('filterSlash', () => {
 			'Quote',
 			'Code block',
 			'Divider',
-			'Collapsible section'
+			'Collapsible section',
+			'Time'
 		]);
-		expect(slashItems).toHaveLength(11);
+		expect(slashItems).toHaveLength(12);
 	});
 
 	test('finds by label, in any case', () => {

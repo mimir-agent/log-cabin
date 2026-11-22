@@ -7,7 +7,7 @@
 	import { Popover, Toolbar } from 'bits-ui';
 	import { docImages, type DocNode, type ResourceTitles } from '#lib/editor/doc.js';
 	import { fileNode, uploadFile } from '#lib/editor/upload.js';
-	import { linkHref } from '#lib/editor/extensions.js';
+	import { linkHref, nextHour, timeNode } from '#lib/editor/extensions.js';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import UiPopover from '#lib/components/ui/Popover.svelte';
@@ -485,20 +485,24 @@
 		bubbleAt = { top: Math.min(start.top, end.top), left: (start.left + end.right) / 2 };
 	}
 
-	// A note's date and time: picked in the reader's own zone, stored as its instant.
+	// A note's date and time: picked in the reader's own zone, stored as its instant and that zone.
+	// It starts at the next full hour: a picker left half filled reports no value, and Insert
+	// then does nothing.
 	let timeOpen = $state(false);
 	let timeValue = $state('');
 
+	$effect(() => {
+		if (!timeOpen) return;
+		const at = nextHour();
+		timeValue = new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm, what the field takes
+	});
+
 	function insertTime(event: SubmitEvent) {
 		event.preventDefault();
-		const timestamp = new Date(timeValue).getTime();
 		tiptap
 			?.chain()
 			.focus()
-			.insertContent([
-				{ type: 'relativeTime', attrs: { timestamp } },
-				{ type: 'text', text: ' ' }
-			])
+			.insertContent([timeNode(new Date(timeValue).getTime()), { type: 'text', text: ' ' }])
 			.run();
 		timeOpen = false;
 	}

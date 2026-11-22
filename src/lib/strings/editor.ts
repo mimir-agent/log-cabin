@@ -1,17 +1,12 @@
 const units = ['KB', 'MB', 'GB'];
 
-const day = 86_400;
-/** A relative time's units, largest first, each with its length in seconds. */
-const relativeUnits: [Intl.RelativeTimeFormatUnit, number][] = [
-	['year', 365 * day],
-	['month', 30 * day],
-	['week', 7 * day],
-	['day', day],
-	['hour', 3600],
-	['minute', 60],
-	['second', 1]
-];
-const relative = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const shortDate: Intl.DateTimeFormatOptions = {
+	weekday: 'short',
+	month: 'short',
+	day: 'numeric',
+	hour: 'numeric',
+	minute: '2-digit'
+};
 const fullDate: Intl.DateTimeFormatOptions = {
 	weekday: 'long',
 	year: 'numeric',
@@ -60,7 +55,7 @@ export const editor = {
 		toggle: (open: boolean) => (open ? 'Close section' : 'Open section')
 	},
 	relativeTime: {
-		/** The note toolbar's button that adds a date and time readers see relative to now. */
+		/** The note toolbar's button that adds a date and time shown on each reader's own clock. */
 		insert: 'Date and time',
 		/** That button's face, drawn as a clock. */
 		insertGlyph: 'Time',
@@ -68,17 +63,10 @@ export const editor = {
 		field: 'When',
 		/** The popover's button that adds it. */
 		apply: 'Insert',
-		/**
-		 * What a reader sees: the time relative to now in the largest whole unit, e.g. "in 3 days",
-		 * "2 hours ago", "tomorrow".
-		 */
-		phrase: (at: number, now: number) => {
-			const seconds = (at - now) / 1000;
-			const [unit, size] =
-				relativeUnits.find(([, size]) => Math.abs(seconds) >= size) ?? relativeUnits.at(-1)!;
-			return relative.format(Math.round(seconds / size), unit);
-		},
-		/** Its title: the full date and time in the reader's zone. */
+		/** What a reader sees: the time on their own clock, e.g. "Wed, Jan 2, 6:30 PM". */
+		chip: (at: number, timeZone: string) =>
+			new Date(at).toLocaleString('en', { ...shortDate, timeZone }),
+		/** Its title on hover: the full date and time in the zone it was written in. */
 		title: (at: number, timeZone: string) =>
 			new Date(at).toLocaleString('en', { ...fullDate, timeZone }),
 		/** How it reads in search and previews, which have no reader: the date in UTC. */
@@ -205,6 +193,12 @@ export const editor = {
 			label: 'Emoji',
 			hint: 'Search emoji by name',
 			aliases: ['emoji', 'emoticon', 'reaction', 'smiley', 'icon']
+		},
+		/** Placeholder copy. Adds a time for the next full hour. */
+		time: {
+			label: 'Time',
+			hint: 'Time shown in each reader’s zone',
+			aliases: ['date', 'clock', 'when', 'schedule']
 		},
 		reference: {
 			label: 'Link to a thread or doc',

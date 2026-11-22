@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db, schema } from '../db';
+import type { Role } from '../db/schema';
 import type { SignedIn } from '../auth/session';
 import { readThreadNaming, threadNaming } from '../chat/threads';
 import { visibleProjectIds } from '../posts/access';
@@ -94,7 +95,7 @@ function afterCursor(cursor: string): SQL {
 }
 
 /** Whether this person took part in the call of the calls row in scope. */
-function tookPartIn(env: Env, who: SignedIn): SQL {
+function tookPartIn(env: Env, who: { user: { id: string } }): SQL {
 	const { calls, callParticipants: p } = schema;
 	return exists(
 		db(env)
@@ -109,7 +110,7 @@ function tookPartIn(env: Env, who: SignedIn): SQL {
  * page or a search counts only calls this person may see: they were in it, it was in their
  * own room, in a project they can see, or in a thread they belong to.
  */
-export function visibleCalls(env: Env, who: SignedIn): SQL {
+export function visibleCalls(env: Env, who: { user: { id: string }; member: { role: Role } }): SQL {
 	const { calls, projects, chatThreadMembers } = schema;
 	return or(
 		tookPartIn(env, who),

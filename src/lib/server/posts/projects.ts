@@ -4,10 +4,12 @@ import { db, schema } from '../db';
 import { emit } from '../events';
 import { dropFromChannel } from '../chat/channels';
 import { newId } from '../id';
+import { discardProjectNotifications, publishUnreadCount } from '../notifications/notify';
 import type { SignedIn } from '../auth/session';
 import { posts as strings } from '../../strings/posts';
 import {
 	canAddPeople,
+	canSeeProject,
 	canManageProject,
 	canUpdateProject,
 	loadWritableProject,
@@ -166,11 +168,24 @@ export async function removeProjectMember(
 	if (userId !== who.user.id && !canManageProject(who, project)) {
 		error(403, strings.errors.cannotManage);
 	}
-	const { projectMembers } = schema;
-	await db(env)
-		.delete(projectMembers)
-		.where(and(eq(projectMembers.projectId, project.id), eq(projectMembers.userId, userId)));
+	const { projectMembers, members } = schema;
+	const removed = await db(env)
+		.select({ role: members.role })
+		.from(members)
+		.where(eq(members.userId, userId))
+		.get();
+	// A private project, or any project for a guest, is out of their sight once they are off it.
+	const stillSees = canSeeProject(removed!, { ...project, isMember: false });
+	await db(env).batch([
+		db(env)
+			.delete(projectMembers)
+			.where(and(eq(projectMembers.projectId, project.id), eq(projectMembers.userId, userId))),
+		discardProjectNotifications(env, { user: { id: userId }, member: removed! }, project.id, {
+			content: !stillSees
+		})
+	]);
 	await dropFromChannel(env, project.id, userId);
+	await publishUnreadCount(env, userId);
 }
 
 export async function setProjectArchived(

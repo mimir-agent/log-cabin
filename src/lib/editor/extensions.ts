@@ -112,28 +112,45 @@ export const Attachment = Node.create({
 	]
 });
 
+/** The top of the next hour on this device's clock: where a new time starts. */
+export function nextHour(): Date {
+	const at = new Date();
+	at.setHours(at.getHours() + 1, 0, 0, 0);
+	return at;
+}
+
+/** A time to insert: the instant, with this device's zone as the one it was written in. */
+export const timeNode = (timestamp: number) => ({
+	type: 'relativeTime',
+	attrs: { timestamp, zone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+});
+
 /**
- * A date and time, shown relative to now ("in 3 days") with the full date in the reader's zone
- * as its title. Only its instant is stored; each render works out the rest.
+ * A date and time, shown on each reader's own clock, with the time in the zone it was written
+ * in as its title. Only its instant and that zone are stored; each render works out the rest.
+ * A time saved before zones were kept has none, and its title shows the reader's zone.
  */
 export const RelativeTime = Node.create({
 	name: 'relativeTime',
 	group: 'inline',
 	inline: true,
 	atom: true,
-	addAttributes: () => ({ timestamp: dataAttribute('timestamp', Number) }),
+	addAttributes: () => ({
+		timestamp: dataAttribute('timestamp', Number),
+		zone: dataAttribute('zone')
+	}),
 	parseHTML: () => [{ tag: 'time[data-timestamp]' }],
 	renderHTML: ({ node, HTMLAttributes }) => {
 		const at: number = node.attrs.timestamp;
-		const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		const reader = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		return [
 			'time',
 			mergeAttributes(HTMLAttributes, {
 				class: 'relative-time',
 				datetime: new Date(at).toISOString(),
-				title: text.relativeTime.title(at, zone)
+				title: text.relativeTime.title(at, node.attrs.zone ?? reader)
 			}),
-			text.relativeTime.phrase(at, Date.now())
+			text.relativeTime.chip(at, reader)
 		];
 	},
 	renderText: ({ node }) => text.relativeTime.text(node.attrs.timestamp)

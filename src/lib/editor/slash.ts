@@ -3,6 +3,7 @@
 import { findParentNode, type ChainedCommands, type Editor, type Range } from '@tiptap/core';
 import { findSuggestionMatch } from '@tiptap/suggestion';
 import { editor as text } from '../strings/editor';
+import { nextHour, timeNode } from './extensions';
 
 export type SlashItem = {
 	label: string;
@@ -11,6 +12,8 @@ export type SlashItem = {
 	aliases: string[];
 	/** Whether the caret is already in this item's block, so picking it only removes the typed text. */
 	isIn?: (editor: Editor) => boolean;
+	/** Whether picking it puts something at the caret, not a block of its own. */
+	inline?: boolean;
 	/** Turns the block the caret is in into this item's. */
 	run: (chain: ChainedCommands) => ChainedCommands;
 };
@@ -33,8 +36,13 @@ const blocks = {
 	quote: { run: (chain) => chain.setBlockquote() },
 	codeBlock: { run: (chain) => chain.setCodeBlock() },
 	divider: { run: (chain) => chain.setHorizontalRule() },
-	details: { run: (chain) => chain.setDetails() }
-} satisfies Record<string, Pick<SlashItem, 'isIn' | 'run'>>;
+	details: { run: (chain) => chain.setDetails() },
+	time: {
+		inline: true,
+		run: (chain) =>
+			chain.insertContent([timeNode(nextHour().getTime()), { type: 'text', text: ' ' }])
+	}
+} satisfies Record<string, Pick<SlashItem, 'isIn' | 'inline' | 'run'>>;
 
 /** In the order the menu lists them. */
 export const slashItems: SlashItem[] = (Object.keys(blocks) as (keyof typeof blocks)[]).map(
@@ -87,7 +95,7 @@ export function applySlash(editor: Editor, range: Range, item: SlashItem) {
 		chain.run();
 		return;
 	}
-	if ($from.parent.content.size > typed) {
+	if (!item.inline && $from.parent.content.size > typed) {
 		const below = $from.after() - typed;
 		chain.insertContentAt(below, { type: 'paragraph' }).setTextSelection(below + 1);
 	}

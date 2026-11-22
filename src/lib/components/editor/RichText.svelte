@@ -198,11 +198,12 @@
 	{:else if node.type === 'mention'}<span class="mention">@{attrs.label}</span>
 	{:else if node.type === 'relativeTime'}
 		{@const at = Number(attrs.timestamp)}
+		{@const reader = page.data.timeZone}
 		<time
 			class="relative-time"
 			datetime={new Date(at).toISOString()}
-			title={text.relativeTime.title(at, page.data.timeZone)}
-			>{text.relativeTime.phrase(at, Date.now())}</time
+			title={text.relativeTime.title(at, String(attrs.zone ?? reader))}
+			>{text.relativeTime.chip(at, reader)}</time
 		>
 	{:else if node.type === 'resourceMention'}
 		{@const target = resources[resourceKey(attrs as ResourceRef)]}

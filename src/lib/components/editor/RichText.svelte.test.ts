@@ -203,28 +203,29 @@ describe('RichText', () => {
 		await expect.element(dialog).not.toBeInTheDocument();
 	});
 
-	it('shows a date and time relative to now, with the full date in the reader’s zone as its title', () => {
-		const inThreeDays = Date.now() + 3 * 86_400_000;
-		const twoHoursAgo = Date.now() - 2 * 3_600_000;
-		const at = (timestamp: number): DocNode => ({ type: 'relativeTime', attrs: { timestamp } });
-		const root = rendered(paragraph(at(inThreeDays), textNode(' '), at(twoHoursAgo)));
-		const [ahead, behind] = root.querySelectorAll('time');
-		expect(ahead.textContent).toBe('in 3 days');
-		expect(behind.textContent).toBe('2 hours ago');
-		expect(ahead.getAttribute('datetime')).toBe(new Date(inThreeDays).toISOString());
-		expect(ahead.title, 'the date in Asia/Tokyo, as the page data says').toBe(
-			new Date(inThreeDays).toLocaleString('en', {
-				weekday: 'long',
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-				hour: 'numeric',
-				minute: '2-digit',
-				timeZone: 'Asia/Tokyo',
-				timeZoneName: 'short'
-			})
+	it('shows a time on the reader’s clock, with the time in the zone it was written in as its title', () => {
+		const at = Date.UTC(2030, 0, 2, 17, 30);
+		const time = (zone?: string): DocNode => ({
+			type: 'relativeTime',
+			attrs: { timestamp: at, ...(zone && { zone }) }
+		});
+		const root = rendered(
+			paragraph(
+				time('America/Los_Angeles'),
+				textNode(' '),
+				time('Asia/Tokyo'),
+				textNode(' '),
+				time()
+			)
 		);
-		expect(ahead.title).toContain('GMT+9');
+		const [written, same, old] = root.querySelectorAll('time');
+		expect(written.textContent, 'the reader is in Asia/Tokyo, as the page data says').toBe(
+			'Thu, Jan 3, 2:30 AM'
+		);
+		expect(written.getAttribute('datetime')).toBe('2030-01-02T17:30:00.000Z');
+		expect(written.title).toBe('Wednesday, January 2, 2030 at 9:30 AM PST');
+		expect(same.title).toBe('Thursday, January 3, 2030 at 2:30 AM GMT+9');
+		expect(old.title, 'a time saved with no zone names the reader’s').toBe(same.title);
 	});
 
 	it('links a mentioned post the reader may see, by its title and type, and shows any other as unavailable', () => {

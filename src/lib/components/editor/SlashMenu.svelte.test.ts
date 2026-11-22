@@ -70,11 +70,22 @@ describe('the / menu', () => {
 		expect(saved().content[0].type).toBe('details');
 	});
 
+	it('puts a time at the caret from /time, in the paragraph that holds the words before it', async () => {
+		render(Editor, { ...props, slash: true, bubble: true });
+		await type('Call at /time');
+		await userEvent.keyboard('{Enter}');
+		const [first, ...rest] = saved().content[0].content;
+		expect(first).toEqual({ type: 'text', text: 'Call at ' });
+		expect(rest[0]).toMatchObject({ type: 'relativeTime' });
+		expect(Number.isSafeInteger(rest[0].attrs.timestamp)).toBe(true);
+		expect(saved().content, 'no block below').toHaveLength(1);
+	});
+
 	it('moves with the arrow keys, wrapping', async () => {
 		render(Editor, { ...props, slash: true, note: true });
 		await type('/');
 		const text = option('Text');
-		const last = option('Collapsible section');
+		const last = option('Time');
 		await expect.element(text).toHaveAttribute('aria-selected', 'true');
 
 		await userEvent.keyboard('{ArrowUp}');
@@ -88,7 +99,7 @@ describe('the / menu', () => {
 		render(Editor, { ...props, slash: true, note: true });
 		await type('/');
 		const text = option('Text');
-		const last = option('Collapsible section');
+		const last = option('Time');
 		await expect.element(text).toBeVisible();
 		await expect.element(box()).toHaveAttribute('aria-activedescendant', text.element().id);
 

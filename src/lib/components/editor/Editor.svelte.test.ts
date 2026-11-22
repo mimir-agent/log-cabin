@@ -51,7 +51,7 @@ describe('Editor', () => {
 		});
 	});
 
-	it('inserts a date and time picked in the note toolbar, stored as its instant', async () => {
+	it('inserts a date and time picked in the note toolbar, stored as its instant and zone', async () => {
 		render(Editor, { ...props, note: true });
 		await page.getByRole('textbox', { name: 'Write something' }).click();
 		await userEvent.keyboard('Meet ');
@@ -60,14 +60,32 @@ describe('Editor', () => {
 		await page.getByRole('button', { name: 'Insert' }).click();
 
 		const box = page.getByRole('textbox', { name: 'Write something' }).element();
-		await expect.poll(() => box.querySelector('time')?.textContent).toMatch(/^in \d+ years$/);
+		await expect.poll(() => box.querySelector('time')?.textContent).toBe('Wed, Jan 2, 9:30 AM');
 		const body = JSON.parse(
 			(document.querySelector('input[name="body"]') as HTMLInputElement).value
 		);
 		expect(body.content[0].content[1]).toEqual({
 			type: 'relativeTime',
-			attrs: { timestamp: new Date('2030-01-02T09:30').getTime() }
+			attrs: {
+				timestamp: new Date('2030-01-02T09:30').getTime(),
+				zone: Intl.DateTimeFormat().resolvedOptions().timeZone
+			}
 		});
+	});
+
+	it('offers the next full hour in the date and time field, so Insert works untouched', async () => {
+		render(Editor, { ...props, note: true });
+		await page.getByRole('textbox', { name: 'Write something' }).click();
+		const before = Date.now();
+		await page.getByRole('button', { name: 'Date and time' }).click();
+		await page.getByRole('button', { name: 'Insert' }).click();
+
+		const box = page.getByRole('textbox', { name: 'Write something' }).element();
+		await expect.poll(() => box.querySelector('time')).not.toBeNull();
+		const shown = new Date(box.querySelector('time')!.getAttribute('datetime')!).getTime();
+		expect(shown).toBeGreaterThan(before);
+		expect(shown - before).toBeLessThanOrEqual(3_600_000);
+		expect(new Date(shown).getMinutes()).toBe(0);
 	});
 
 	it('offers notes, posts and calls after people when @ is typed in a note, and inserts one without its title', async () => {
