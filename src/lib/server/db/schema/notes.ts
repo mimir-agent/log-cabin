@@ -141,7 +141,8 @@ export const noteEventKinds = [
 	'pinned',
 	'unpinned',
 	'referenced',
-	'posted'
+	'posted',
+	'from_post'
 ] as const;
 export type NoteEventKind = (typeof noteEventKinds)[number];
 export const noteRefTypes = ['post', 'note'] as const;

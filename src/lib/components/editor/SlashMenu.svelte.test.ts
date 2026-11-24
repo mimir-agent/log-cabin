@@ -210,6 +210,27 @@ describe('the / menu', () => {
 		expect(first.contains(hit), 'the option, not the dialog or its backdrop').toBe(true);
 	});
 
+	it('closes on Escape without closing the dialog around the editor', async () => {
+		const children = createRawSnippet(() => ({
+			render: () => '<div></div>',
+			setup: (host) => {
+				const editor = mount(Editor, {
+					target: host,
+					props: { ...props, slash: 'document', bubble: true }
+				});
+				return () => unmount(editor);
+			}
+		}));
+		render(Dialog, { open: true, title: 'New thread', bare: true, size: '3xl', children });
+		await type('/he');
+		await expect.element(list()).toBeVisible();
+		await userEvent.keyboard('{Escape}');
+		await expect.element(list()).not.toBeInTheDocument();
+		await expect.element(box()).toBeVisible();
+		await expect.element(box()).toHaveFocus();
+		expect(saved().content[0].content[0].text).toBe('/he');
+	});
+
 	it('is not in a box that did not ask for it', async () => {
 		render(Editor, { ...props, compact: true });
 		await type('/');

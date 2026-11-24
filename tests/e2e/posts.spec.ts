@@ -134,8 +134,11 @@ test('a poll takes votes, lets a vote change, and shows who voted', async ({ bro
 
 test('a new version links to the old one, which stays readable', async ({ browser }) => {
 	const ada = await signIn(browser, 'ada');
-	await ada.goto(`/posts/${posts.packing.id}`);
-	await ada.getByRole('main').getByRole('button', { name: 'More actions' }).click();
+	await ada.goto(`/posts/${posts.packing.id}`, { waitUntil: 'networkidle' });
+	await ada
+		.locator('header.page-header:visible')
+		.getByRole('button', { name: 'More actions' })
+		.click();
 	await ada.getByRole('menuitem', { name: 'New version' }).click();
 	await expect(ada).toHaveURL(/\/posts\/[0-9A-Z]{26}\/edit$/);
 	await ada.getByRole('textbox', { name: 'Title' }).fill('Packing, take two');

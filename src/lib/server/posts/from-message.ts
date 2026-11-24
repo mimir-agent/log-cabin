@@ -8,7 +8,7 @@ import { newId } from '../id';
 import type { SignedIn } from '../auth/session';
 import { getObject, putObject } from '../storage';
 import { loadThread } from '../chat/threads';
-import { attachmentIdOf, attachmentPath, type DocNode } from '../../editor/doc';
+import { attachmentIdOf, replaceAttachmentIds, type DocNode } from '../../editor/doc';
 import { chat as chatStrings } from '../../strings/chat';
 import { attachmentKey } from './attachments';
 import { publishPost } from './drafts';
@@ -107,16 +107,5 @@ async function copyThreadFiles(
 			});
 		copies.set(row.id, id);
 	}
-	const rewrite = (node: DocNode): DocNode => {
-		const attrs = node.attrs ?? {};
-		if (node.type === 'attachment' && copies.has(String(attrs.id))) {
-			return { ...node, attrs: { ...attrs, id: copies.get(String(attrs.id)) } };
-		}
-		if (node.type === 'image' && copies.has(attachmentIdOf(String(attrs.src)))) {
-			const id = copies.get(attachmentIdOf(String(attrs.src)))!;
-			return { ...node, attrs: { ...attrs, src: attachmentPath(id) } };
-		}
-		return node.content ? { ...node, content: node.content.map(rewrite) } : node;
-	};
-	return rewrite(body);
+	return replaceAttachmentIds(body, copies);
 }

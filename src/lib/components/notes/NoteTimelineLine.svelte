@@ -16,8 +16,12 @@
 		pinned: 'pin-tack',
 		unpinned: 'pin-tack',
 		posted: 'paper-airplane',
-		referenced: 'link'
+		referenced: 'link',
+		from_post: 'note'
 	};
+	const words = $derived(
+		event.kind === 'from_post' ? notes.timeline.madeFrom : notes.timeline[event.kind]
+	);
 </script>
 
 <!-- One quiet line among a note's comments: what happened to the note, who did it, when. -->
@@ -25,9 +29,17 @@
 	<span class="icon"><Icon name={icons[event.kind]} size={16} /></span>
 	<span class="what">
 		<span class="actor">{event.actorName}</span>
-		{notes.timeline[event.kind]}
+		{words}
 		{#if event.kind === 'title'}
 			<span class="name">{event.title || notes.editor.titlePlaceholder}</span>
+		{:else if event.kind === 'from_post'}
+			{#if event.post}
+				<a class="name" href={resolve('/posts/[id]', { id: event.post.id })}
+					>{event.post.title || notes.editor.titlePlaceholder}</a
+				>
+			{:else}
+				<span class="name">{notes.timeline.madeFromDeleted}</span>
+			{/if}
 		{:else if event.kind === 'referenced'}
 			<a
 				class="name"

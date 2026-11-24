@@ -2,6 +2,7 @@
 // Nothing here draws; the list is SuggestionList.svelte, driven by slashMenu() in components/editor.
 import { findParentNode, type ChainedCommands, type Editor, type Range } from '@tiptap/core';
 import { findSuggestionMatch } from '@tiptap/suggestion';
+import type { IconName } from '../components/ui/icons/campsite-icons';
 import { editor as text } from '../strings/editor';
 import { nextHour, timeNode } from './extensions';
 
@@ -15,16 +16,24 @@ type Block = {
 	run: (chain: ChainedCommands) => ChainedCommands;
 };
 
+/** How an item is drawn beside its label. */
+type Look = {
+	icon: IconName;
+	/** What typing at the start of a line does the same, if anything: shown as a key. */
+	shortcut?: string;
+};
+
 export type SlashItem = {
 	label: string;
 	hint: string;
 	/** Other words that find the item; never shown. */
 	aliases: string[];
-} & (
-	| Block
-	/** An action that isn't a block (a file chooser, an `@`): runs once the typed text is gone. */
-	| { act: (editor: Editor) => void }
-);
+} & Look &
+	(
+		| Block
+		/** An action that isn't a block (a file chooser, an `@`): runs once the typed text is gone. */
+		| { act: (editor: Editor) => void }
+	);
 
 const listKinds = ['bulletList', 'orderedList', 'taskList'];
 
@@ -34,23 +43,39 @@ const inList = (kind: string) => (editor: Editor) =>
 		.name === kind;
 
 const blocks = {
-	text: { run: (chain) => chain.setParagraph() },
-	heading1: { run: (chain) => chain.setHeading({ level: 1 }) },
-	heading2: { run: (chain) => chain.setHeading({ level: 2 }) },
-	heading3: { run: (chain) => chain.setHeading({ level: 3 }) },
-	bulletList: { isIn: inList('bulletList'), run: (chain) => chain.toggleBulletList() },
-	orderedList: { isIn: inList('orderedList'), run: (chain) => chain.toggleOrderedList() },
-	taskList: { isIn: inList('taskList'), run: (chain) => chain.toggleTaskList() },
-	quote: { run: (chain) => chain.setBlockquote() },
-	codeBlock: { run: (chain) => chain.setCodeBlock() },
-	divider: { run: (chain) => chain.setHorizontalRule() },
-	details: { run: (chain) => chain.setDetails() },
+	text: { icon: 'text-align-left', run: (chain) => chain.setParagraph() },
+	heading1: { icon: 'heading1', shortcut: '#', run: (chain) => chain.setHeading({ level: 1 }) },
+	heading2: { icon: 'heading2', shortcut: '##', run: (chain) => chain.setHeading({ level: 2 }) },
+	heading3: { icon: 'heading3', shortcut: '###', run: (chain) => chain.setHeading({ level: 3 }) },
+	bulletList: {
+		icon: 'unordered-list',
+		shortcut: '-',
+		isIn: inList('bulletList'),
+		run: (chain) => chain.toggleBulletList()
+	},
+	orderedList: {
+		icon: 'ordered-list',
+		shortcut: '1.',
+		isIn: inList('orderedList'),
+		run: (chain) => chain.toggleOrderedList()
+	},
+	taskList: {
+		icon: 'checklist',
+		shortcut: '[ ]',
+		isIn: inList('taskList'),
+		run: (chain) => chain.toggleTaskList()
+	},
+	quote: { icon: 'quote', shortcut: '>', run: (chain) => chain.setBlockquote() },
+	codeBlock: { icon: 'code-block', shortcut: '```', run: (chain) => chain.setCodeBlock() },
+	divider: { icon: 'horizontal-rule', shortcut: '---', run: (chain) => chain.setHorizontalRule() },
+	details: { icon: 'chevron-right', run: (chain) => chain.setDetails() },
 	time: {
+		icon: 'clock',
 		inline: true,
 		run: (chain) =>
 			chain.insertContent([timeNode(nextHour().getTime()), { type: 'text', text: ' ' }])
 	}
-} satisfies Record<string, Block>;
+} satisfies Record<string, Block & Look>;
 
 /** What each kind of box lists: the full document menu, the comment box's, and chat's. */
 export type SlashSurface = 'document' | 'comment' | 'chat';
@@ -96,10 +121,16 @@ export function slashItems(
 			.run();
 	return [
 		...surfaceBlocks[surface].map((id) => ({ ...slash[id], ...blocks[id] })),
-		...(file ? [{ ...slash.file, act: file }] : []),
-		{ ...slash.mention, act: (editor: Editor) => editor.chain().focus().insertContent('@').run() },
-		...(room && surface !== 'comment' ? [{ ...slash.callLink, act: callLink }] : []),
-		...(emoji ? [{ ...slash.emoji, act: emoji }] : [])
+		...(file ? [{ ...slash.file, icon: 'picture-plus' as const, act: file }] : []),
+		{
+			...slash.mention,
+			icon: 'at-sign' as const,
+			act: (editor: Editor) => editor.chain().focus().insertContent('@').run()
+		},
+		...(room && surface !== 'comment'
+			? [{ ...slash.callLink, icon: 'video-camera' as const, act: callLink }]
+			: []),
+		...(emoji ? [{ ...slash.emoji, icon: 'face-smile-plus' as const, act: emoji }] : [])
 	];
 }
 

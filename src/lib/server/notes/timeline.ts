@@ -14,7 +14,8 @@ import { visibleNoteIds } from './access';
 type NoteEvent =
 	| { kind: 'project' | 'pinned' | 'unpinned'; projectId: string }
 	| { kind: 'title'; title: string }
-	| { kind: 'posted'; projectId: string; refType: 'post'; refId: string };
+	| { kind: 'posted'; projectId: string; refType: 'post'; refId: string }
+	| { kind: 'from_post'; refType: 'post'; refId: string };
 
 /**
  * One line on the note's timeline. The caller publishes it with `publishNoteTimeline`, as it
@@ -85,6 +86,8 @@ export type NoteTimelineEvent = { id: string; createdAt: number; actorName: stri
 	| { kind: 'project' | 'pinned' | 'unpinned' | 'posted'; project: { id: string; name: string } }
 	| { kind: 'title'; title: string }
 	| { kind: 'referenced'; ref: { type: NoteRefType; id: string; title: string } }
+	// The post this doc was copied from; null once it is deleted or out of the reader's sight.
+	| { kind: 'from_post'; post: { id: string; title: string } | null }
 );
 
 /**
@@ -128,6 +131,7 @@ export async function listNoteEvents(
 				eq(e.noteId, noteId),
 				or(
 					eq(e.kind, 'title'),
+					eq(e.kind, 'from_post'),
 					and(inArray(e.kind, ['project', 'pinned', 'unpinned', 'posted']), isNotNull(projects.id)),
 					and(
 						eq(e.kind, 'referenced'),
@@ -154,6 +158,12 @@ export async function listNoteEvents(
 					...line,
 					kind: row.kind,
 					ref: { type: row.refType, id: row.refId, title: row.refTitle }
+				};
+			case 'from_post':
+				return {
+					...line,
+					kind: row.kind,
+					post: row.refTitle === null || !row.refId ? null : { id: row.refId, title: row.refTitle }
 				};
 			default:
 				if (!row.projectId || row.projectName === null) throw missing('project');

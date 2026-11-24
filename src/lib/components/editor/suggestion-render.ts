@@ -41,7 +41,11 @@ export function suggestionRender<Item, Attrs>(list: {
 				show(props);
 			},
 			onUpdate: show,
-			onKeyDown: ({ event }) => mounted.keydown(event),
+			onKeyDown: ({ event }) => {
+				// Escape closes the list and nothing around it: a dialog would close with it.
+				if (event.key === 'Escape') event.stopPropagation();
+				return mounted.keydown(event);
+			},
 			onExit: () => {
 				unmount(mounted);
 				target.remove();

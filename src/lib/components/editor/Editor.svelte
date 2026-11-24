@@ -518,6 +518,18 @@
 		linkOpen = false;
 	}
 
+	function closeLink() {
+		linkOpen = false;
+		if (tiptap) placeBubble(tiptap);
+	}
+
+	function linkKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Escape') return;
+		event.stopPropagation();
+		linkOpen = false;
+		tiptap?.commands.focus();
+	}
+
 	// The selection menu: over the middle of selected text while the editor has focus, as
 	// Campsite's bubble menu is, kept on screen. Not over a code block, where marks don't show.
 	// A phone's note gets it too, in place of the toolbar, with its tools grouped (phoneTools).
@@ -564,6 +576,9 @@
 			8
 		);
 	});
+
+	// On a touch screen the field takes the place of the menu's buttons, in the menu's own surface.
+	const linkInline = $derived(linkOpen && touch.current && bubbleAt !== null);
 
 	function placeBubble(editor: Editor) {
 		const { selection } = editor.state;
@@ -750,6 +765,44 @@
 	{/if}
 {/snippet}
 
+{#snippet linkField()}
+	<form class="link-form" onsubmit={applyLink} onkeydown={linkKeydown}>
+		<input
+			type="text"
+			aria-label={text.linkUrl}
+			placeholder={text.linkUrlPlaceholder}
+			bind:value={linkUrl}
+			{@attach (input) => input.focus()}
+		/>
+		{#if linkAsksText}
+			<input
+				type="text"
+				aria-label={text.linkText}
+				placeholder={text.linkTextPlaceholder}
+				bind:value={linkText}
+			/>
+		{/if}
+		<div class="link-actions">
+			<button type="submit" class="link-button" aria-label={text.linkApply} title={text.linkApply}>
+				<Icon name="check" size={16} />
+			</button>
+			{#if linkActive}
+				<button
+					type="button"
+					class="link-button"
+					data-remove
+					aria-label={text.linkRemove}
+					title={text.linkRemove}
+					onclick={removeLink}
+				>
+					<Icon name="trash" size={16} />
+				</button>
+			{/if}
+		</div>
+		{#if linkError}<p role="alert">{linkError}</p>{/if}
+	</form>
+{/snippet}
+
 {#snippet emojiTool()}
 	<UiPopover
 		bind:open={emojiOpen}
@@ -853,22 +906,37 @@
 					{...props}
 					class="toolbar bubble"
 					data-touch={touch.current || undefined}
+					data-linking={linkInline || undefined}
 					style:inset-block-start="{touch.current ? touchAt.top : at.top}px"
 					style:inset-inline-start="{touch.current ? touchAt.left : bubbleLeft}px"
 					bind:clientWidth={bubbleWidth}
 					bind:clientHeight={bubbleHeight}
-					onmousedown={(event) => event.preventDefault()}
+					onmousedown={(event) => {
+						if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
+					}}
+					onfocusout={(event) => {
+						if (linkInline && !event.currentTarget.contains(event.relatedTarget as Node | null)) {
+							closeLink();
+						}
+					}}
 				>
-					{#if phone.current}{@render phoneTools()}{:else}{@render formatTools()}{/if}
+					{#if linkInline}
+						{@render linkField()}
+					{:else if phone.current}
+						{@render phoneTools()}
+					{:else}
+						{@render formatTools()}
+					{/if}
 				</div>
 			{/snippet}
 		</Toolbar.Root>
 	{/if}
-	<Popover.Root bind:open={linkOpen}>
+	<Popover.Root open={linkOpen && !linkInline} onOpenChange={(open) => (linkOpen = open)}>
 		<Popover.Portal>
 			<Popover.Content
 				customAnchor={linkAnchor}
 				sideOffset={4}
+				collisionPadding={8}
 				onCloseAutoFocus={(event) => {
 					event.preventDefault();
 					tiptap?.commands.focus();
@@ -877,27 +945,7 @@
 				{#snippet child({ wrapperProps, props })}
 					<div {...wrapperProps}>
 						<div {...props} class="link-layer">
-							<form class="link-form" onsubmit={applyLink}>
-								<input
-									type="text"
-									aria-label={text.linkUrl}
-									placeholder={text.linkUrlPlaceholder}
-									bind:value={linkUrl}
-								/>
-								{#if linkAsksText}
-									<input
-										type="text"
-										aria-label={text.linkText}
-										placeholder={text.linkTextPlaceholder}
-										bind:value={linkText}
-									/>
-								{/if}
-								<button type="submit">{text.linkApply}</button>
-								{#if linkActive}
-									<button type="button" onclick={removeLink}>{text.linkRemove}</button>
-								{/if}
-								{#if linkError}<p role="alert">{linkError}</p>{/if}
-							</form>
+							{@render linkField()}
 						</div>
 					</div>
 				{/snippet}
@@ -1144,17 +1192,82 @@
 	/* bits-ui copies this onto its floating wrapper: over the dialog the editor may sit in. */
 	.link-layer {
 		z-index: var(--z-popover);
-	}
-
-	.link-form {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--gap-xs);
+		inline-size: min(20rem, calc(100vw - 2 * var(--gap-sm)));
 		padding: var(--gap-sm);
 		border-radius: var(--radius-surface);
 		background-color: var(--hue-z2-bg);
 		color: var(--hue-z2-fg);
 		box-shadow: var(--elevation-popover);
+	}
+
+	/* One row: the address and its buttons; the words to show, when asked for, go under the
+	   address; the error takes a line of its own, so the buttons stay where they are. */
+	.link-form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: var(--gap-xs);
+		align-items: center;
+	}
+
+	.link-form input {
+		grid-column: 1;
+		inline-size: 100%;
+		min-inline-size: 0;
+	}
+
+	.link-actions {
+		grid-column: 2;
+		grid-row: 1;
+		display: flex;
+		gap: var(--gap-xs);
+	}
+
+	.link-form p {
+		grid-column: 1 / -1;
+		margin: 0;
+		color: var(--hue-danger);
+		font-size: var(--type-caption);
+	}
+
+	.link-button {
+		display: inline-grid;
+		place-items: center;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		padding: 0;
+		border: 0;
+		border-radius: var(--radius-xs);
+		background-color: transparent;
+		color: var(--hue-z2-fg);
+		cursor: pointer;
+	}
+
+	.link-button:hover {
+		background-color: var(--hue-fill);
+	}
+
+	.link-button[type='submit'] {
+		background-color: var(--hue-accent);
+		color: var(--hue-accent-fg);
+	}
+
+	.link-button[type='submit']:hover {
+		background-color: var(--hue-accent-hover);
+	}
+
+	.link-button[data-remove]:hover {
+		background-color: var(--hue-danger-solid);
+		color: var(--hue-white);
+	}
+
+	/* In the selection menu the field fills the menu's own row, 44px tall as its buttons are. */
+	.bubble[data-linking] {
+		inline-size: min(20rem, calc(100vw - 2 * var(--gap-sm)));
+	}
+
+	.bubble .link-form {
+		inline-size: 100%;
+		min-block-size: var(--tap-min);
 	}
 
 	.time-form {

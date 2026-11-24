@@ -3,6 +3,7 @@
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { DropdownMenu } from 'bits-ui';
 	import Summary from '#lib/components/ai/Summary.svelte';
@@ -38,6 +39,8 @@
 	import { subscribe } from '#lib/realtime.js';
 	import { cursorHue } from '#lib/notes/live.js';
 	import { core } from '#lib/strings/core.js';
+	import { notes } from '#lib/strings/notes.js';
+	import { toast } from '#lib/components/ui/Toast.svelte';
 	import { posts } from '#lib/strings/posts.js';
 	import { time } from '#lib/strings/time.js';
 	import type { ActionData, PageData } from './$types';
@@ -79,6 +82,12 @@
 			}));
 	const latest = $derived(data.versions.at(-1)!);
 	const isLatest = $derived(latest.id === post.id);
+	async function copyLink() {
+		await navigator.clipboard.writeText(
+			new URL(resolve('/posts/[id]', { id: post.id }), page.url.origin).href
+		);
+		toast(notes.note.linkCopied);
+	}
 	const v = posts.versions;
 
 	// On a phone a thread's reply row hands its reply to the box at the bottom, as Campsite does.
@@ -150,17 +159,16 @@
 				canDraft={data.summaries !== 'off'}
 			/>
 		{/if}
-		{#if narrow.current || canEdit || canResolve}
-			<Menu align="end">
-				{#snippet trigger({ props })}
-					<IconButton {...props} icon="dots-horizontal" label={core.actions.more} />
-				{/snippet}
-				{#if narrow.current}
-					{@render phoneRows()}
-				{/if}
-				{@render ownRows()}
-			</Menu>
-		{/if}
+		<Menu align="end">
+			{#snippet trigger({ props })}
+				<IconButton {...props} icon="dots-horizontal" label={core.actions.more} />
+			{/snippet}
+			{#if narrow.current}
+				{@render phoneRows()}
+			{/if}
+			{@render bridgeRows()}
+			{@render ownRows()}
+		</Menu>
 		{#if closeHref}
 			<IconButton href={closeHref} icon="close" label={core.actions.close} />
 		{/if}
@@ -260,6 +268,26 @@
 			{s.resolve}
 		</DropdownMenu.Item>
 	{/if}
+	{#if canEdit || canResolve}<DropdownMenu.Separator />{/if}
+{/snippet}
+
+{#snippet bridgeRows()}
+	{#if data.canMakeDoc}
+		<form method="POST" action="?/makeDoc" use:enhance>
+			<DropdownMenu.Item>
+				{#snippet child({ props })}
+					<button {...props} type="submit">
+						<Icon name="note" />
+						{posts.makeDoc}
+					</button>
+				{/snippet}
+			</DropdownMenu.Item>
+		</form>
+	{/if}
+	<DropdownMenu.Item onSelect={copyLink}>
+		<Icon name="link" />
+		{notes.note.copyLink}
+	</DropdownMenu.Item>
 	{#if canEdit || canResolve}<DropdownMenu.Separator />{/if}
 {/snippet}
 

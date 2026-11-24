@@ -134,6 +134,7 @@ caller draws each row.
 		position: fixed;
 		z-index: var(--z-popover);
 		min-inline-size: calc(var(--gap-xl) * 8);
+		max-inline-size: calc(100dvw - var(--gap-md) * 2);
 		max-block-size: min(calc(var(--gap-xl) * 10), 60dvh);
 		overflow-y: auto;
 		padding: var(--gap-xs);

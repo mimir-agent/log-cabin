@@ -242,7 +242,9 @@ function lines(events: NoteTimelineEvent[]) {
 				? e.title
 				: e.kind === 'referenced'
 					? `${e.ref.type} ${e.ref.title}`
-					: e.project.name;
+					: e.kind === 'from_post'
+						? (e.post?.title ?? 'a deleted post')
+						: e.project.name;
 		return `${e.actorName} ${e.kind} ${what}`;
 	});
 }

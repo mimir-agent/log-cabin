@@ -349,6 +349,7 @@
 							image={canvasImage}
 							live={liveExtensions(live, passages)}
 							note
+							autofocus={page.url.searchParams.get('focus') === 'end'}
 							placeholder={notes.editor.bodyPlaceholder}
 							members={data.people}
 							resources={data.resources}

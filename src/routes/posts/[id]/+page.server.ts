@@ -41,6 +41,8 @@ import { viewerFollowUps } from '#lib/server/follow-ups.js';
 import { draftResolution } from '#lib/server/ai/resolution.js';
 import { postUnits, summarizePost, summaryOffer } from '#lib/server/ai/summaries.js';
 import { docResources, type DocNode } from '#lib/editor/doc.js';
+import { makeDocFromPost } from '#lib/server/notes/from-post.js';
+import { resolve } from '$app/paths';
 import { resourceTitles } from '#lib/server/search/resources.js';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 
@@ -110,6 +112,7 @@ export const load: PageServerLoad = async (event) => {
 		viewerId: who.user.id,
 		canWrite: canWriteInProject(who.member, post.project),
 		isAuthor,
+		canMakeDoc: who.member.role !== 'viewer',
 		isAdmin: who.member.role === 'admin',
 		pin,
 		moves,
@@ -224,6 +227,11 @@ export const actions: Actions = {
 		const { env, who, post } = await postAction(event);
 		await deletePost(env, who, post);
 		redirect(303, `/projects/${post.projectId}`);
+	},
+	makeDoc: async (event) => {
+		const { env, who, post } = await postAction(event);
+		const id = await makeDocFromPost(env, who, post);
+		redirect(303, `${resolve('/notes/[id]', { id })}?focus=end`);
 	},
 	requestFeedback: async (event) => {
 		const env = getEnv();

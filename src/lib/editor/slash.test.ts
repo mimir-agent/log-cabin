@@ -137,6 +137,25 @@ describe('slashItems', () => {
 	});
 });
 
+describe('slashItems shortcuts', () => {
+	test('show the Markdown that already makes the block, and only for those items', () => {
+		const shortcuts = slashItems('document', all)
+			.filter((item) => item.shortcut)
+			.map((item) => [item.label, item.shortcut]);
+		expect(shortcuts).toEqual([
+			['Heading 1', '#'],
+			['Heading 2', '##'],
+			['Heading 3', '###'],
+			['Bulleted list', '-'],
+			['Numbered list', '1.'],
+			['Checklist', '[ ]'],
+			['Quote', '>'],
+			['Code block', '```'],
+			['Divider', '---']
+		]);
+	});
+});
+
 describe('filterSlash', () => {
 	const items = slashItems('document', all);
 	const labels = (query: string) => filterSlash(query, items).map((item) => item.label);

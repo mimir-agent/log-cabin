@@ -252,6 +252,18 @@ export function docAttachments(node: DocNode): string[] {
 	return [...new Set(docFiles(node).map((file) => file.id))];
 }
 
+/** The document with each attachment id that `ids` names swapped for its copy's id. */
+export function replaceAttachmentIds(node: DocNode, ids: Map<string, string>): DocNode {
+	const attrs = node.attrs ?? {};
+	const attachment = node.type === 'attachment' ? ids.get(String(attrs.id)) : undefined;
+	if (attachment) return { ...node, attrs: { ...attrs, id: attachment } };
+	const image = node.type === 'image' ? ids.get(attachmentIdOf(String(attrs.src))) : undefined;
+	if (image) return { ...node, attrs: { ...attrs, src: attachmentPath(image) } };
+	return node.content
+		? { ...node, content: node.content.map((child) => replaceAttachmentIds(child, ids)) }
+		: node;
+}
+
 /** The files a document holds, images and others, in reading order, with their names. */
 export function docFiles(node: DocNode): { id: string; name: string }[] {
 	if (node.type === 'attachment' && typeof node.attrs?.id === 'string') {

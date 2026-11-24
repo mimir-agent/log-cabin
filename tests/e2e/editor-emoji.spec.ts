@@ -78,6 +78,20 @@ for (const { name, path, box } of surfaces) {
 		await page.context().close();
 	});
 
+	test(`${name}: Escape closes the : list and leaves what was typed in the box`, async ({
+		browser
+	}) => {
+		const page = await open(browser, desktop, path);
+		await box(page).click();
+		await page.keyboard.type(':sm');
+		await expect(list(page)).toBeVisible();
+		await page.keyboard.press('Escape');
+		await expect(list(page)).toBeHidden();
+		await expect(box(page)).toHaveText(':sm');
+		await expect(box(page)).toBeFocused();
+		await page.context().close();
+	});
+
 	test(`${name}: a typed :tada: becomes 🎉 as the second colon is typed`, async ({ browser }) => {
 		const page = await open(browser, desktop, path);
 		await box(page).click();
