@@ -149,6 +149,11 @@
 		formOpen = false;
 		commenting = null;
 	}
+	/** A phone's selection menu comments on the selected words with the form `.passage-tools` opens. */
+	function commentOnSelection() {
+		commenting = selected;
+		formOpen = true;
+	}
 
 	// The body is edited live. Until the document arrives, the stored copy stands in for it.
 	// A new connection only for another note, or when sharing changes what this person may do.
@@ -345,6 +350,7 @@
 							resources={data.resources}
 							disabled={!data.live.canWrite || status === 'connecting'}
 							uploadUrl={data.live.canWrite ? `/notes/${note.id}/attachments` : undefined}
+							oncomment={data.canDiscuss ? commentOnSelection : undefined}
 						/>
 					</div>
 				{/key}
@@ -357,6 +363,7 @@
 			{#if data.canDiscuss && passageTools && status !== 'connecting'}
 				<div
 					class="passage-tools"
+					data-by-menu={data.live.canWrite || undefined}
 					style:inset-block-start="{passageTools.top}px"
 					style:inset-inline-start="{passageTools.left}px"
 				>
@@ -537,6 +544,21 @@
 		margin-block-start: var(--gap-xs);
 	}
 
+	/* On a touch screen the system's selection handle hangs just under the words. */
+	@media (pointer: coarse) {
+		.passage-tools {
+			margin-block-start: var(--gap-md);
+		}
+	}
+
+	/* On a phone, an editable note's selection menu has the Comment button; this one only
+	   stays laid out, so the form it opens has its place under the words. */
+	@media (max-width: 39.99rem) {
+		.passage-tools[data-by-menu] {
+			visibility: hidden;
+		}
+	}
+
 	.jump {
 		display: inline-block;
 		margin-block-start: var(--gap-sm);
@@ -549,7 +571,7 @@
 		background: none;
 	}
 
-	.body :global(.editor .toolbar) {
+	.body :global(.editor .toolbar:not(.bubble)) {
 		position: sticky;
 		inset-block-start: var(--header-h);
 		z-index: 1;
@@ -557,16 +579,6 @@
 		padding: var(--gap-xs) 0;
 		border-block-end: 0;
 		background-color: var(--hue-z0-bg);
-	}
-
-	/* On a phone the tools stay one row and scroll sideways under a fade, as in the composer. */
-	@media (max-width: 39.99rem) {
-		.body :global(.editor .toolbar) {
-			flex-wrap: nowrap;
-			overflow-x: auto;
-			scrollbar-width: none;
-			mask-image: linear-gradient(to left, transparent, black var(--gap-lg));
-		}
 	}
 
 	/* The first line keeps a label's height clear under the sticky tools, so the name over

@@ -18,7 +18,7 @@ async function open(browser: Browser, who: Person): Promise<Page> {
 	await context.addCookies([{ name: 'campfire_session', value: people[who].token, url: baseURL }]);
 	const page = await context.newPage();
 	await page.goto(`/notes/${trip.id}`);
-	await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	return page;
 }
 

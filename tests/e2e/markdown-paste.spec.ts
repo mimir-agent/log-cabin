@@ -78,7 +78,7 @@ async function open(page: Page, surface: (typeof surfaces)[number]) {
 	}
 	await page.goto(url, { waitUntil: 'networkidle' });
 	if (surface.url === null) {
-		await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+		await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	}
 	const box = page.getByRole('textbox', { name: surface.box });
 	await box.click();

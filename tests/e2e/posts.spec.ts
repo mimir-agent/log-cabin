@@ -36,7 +36,7 @@ test('ticks in a post and in a comment are still there after a reload', async ({
 test('a tick in a live note is still there after a reload', async ({ browser }) => {
 	const ada = await signIn(browser, 'ada');
 	await ada.goto(`/notes/${notes.tasks.id}`);
-	const connected = ada.getByRole('status').filter({ hasText: 'Connected' });
+	const connected = ada.getByRole('status').filter({ hasText: 'All changes saved' });
 	await expect(connected).toBeVisible();
 	await task(ada, 'Stack wood').check();
 	await ada.reload();

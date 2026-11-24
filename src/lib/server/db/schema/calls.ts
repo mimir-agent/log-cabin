@@ -29,6 +29,20 @@ export const calls = sqliteTable('calls', {
 	summary: text('summary')
 });
 
+export const sharePermissions = ['view', 'edit'] as const;
+export type SharePermission = (typeof sharePermissions)[number];
+
+/** A call shared into a channel after it started (migrations/0042_call_shares.sql). */
+export const callShares = sqliteTable('call_shares', {
+	callId: text('call_id')
+		.primaryKey()
+		.references(() => calls.id, { onDelete: 'cascade' }),
+	projectId: text('project_id')
+		.notNull()
+		.references(() => projects.id, { onDelete: 'cascade' }),
+	permission: text('permission', { enum: sharePermissions }).notNull()
+});
+
 export const callGuestPasses = sqliteTable('call_guest_passes', {
 	id: text('id').primaryKey(),
 	callId: text('call_id')

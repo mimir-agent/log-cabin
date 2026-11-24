@@ -18,18 +18,19 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 
 /**
  * The top-left corner for a popup of `size`, `gap` away from the caret. It sits below the caret
- * unless its bottom edge would pass the bottom of `visible`, and then above. Either way it is
- * pulled back inside `visible`.
+ * unless its bottom edge would pass the bottom of `visible`, and then above, `flipGap` away.
+ * Either way it is pulled back inside `visible`.
  */
 export function placePopup(
 	caret: Caret,
 	size: Pick<Box, 'width' | 'height'>,
 	visible: Box,
-	gap: number
+	gap: number,
+	flipGap = gap
 ): Point {
 	const below = caret.bottom + gap;
 	const fitsBelow = below + size.height <= visible.top + visible.height;
-	const top = fitsBelow ? below : caret.top - gap - size.height;
+	const top = fitsBelow ? below : caret.top - flipGap - size.height;
 	return {
 		left: clamp(caret.left, visible.left, visible.left + visible.width - size.width),
 		top: clamp(top, visible.top, visible.top + visible.height - size.height)

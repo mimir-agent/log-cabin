@@ -12,6 +12,8 @@
 	import { accountTabs } from '#lib/settings-nav.js';
 	import { applyTheme, themeChoices, type ThemeChoice } from '#lib/styles/theme.js';
 	import { auth } from '#lib/strings/auth.js';
+	import { calls } from '#lib/strings/calls.js';
+	import { toast } from '#lib/components/ui/Toast.svelte';
 	import { core } from '#lib/strings/core.js';
 	import { people } from '#lib/strings/people.js';
 	import type { PageProps } from './$types';
@@ -21,6 +23,10 @@
 	const e = auth.emailChange;
 	let editing = $state(false);
 
+	async function copyRoomLink() {
+		await navigator.clipboard.writeText(page.url.origin + data.roomPath);
+		toast(calls.personalLink.copied);
+	}
 	let theme = $state(untrack(() => data.theme));
 	let themeSaved = $state(false);
 	let themeError = $state<string>();
@@ -135,6 +141,12 @@
 				options={themeChoices.map((value) => ({ value, label: people.theme.choices[value] }))}
 				onValueChange={saveTheme}
 			/>
+		{/snippet}
+	</SettingsSection>
+
+	<SettingsSection title={calls.personalLink.title} description={calls.personalLink.intro}>
+		{#snippet actions()}
+			<Button onclick={copyRoomLink}>{calls.personalLink.copy}</Button>
 		{/snippet}
 	</SettingsSection>
 

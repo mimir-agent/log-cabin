@@ -87,6 +87,8 @@ export const editor = {
 		/** Why a mention's title can't be shown to this person. */
 		notFound: 'That doc, thread or call doesn’t exist, or you can’t see it.'
 	},
+	/** A phone's selection menu folds the block types and the less used marks into one menu. */
+	formatMenu: { label: 'Format', text: 'Regular text' },
 	link: 'Link',
 	linkGlyph: 'Link',
 	linkUrl: 'Link address',

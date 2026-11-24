@@ -24,7 +24,7 @@ async function open(browser: Browser, who: Person): Promise<Page> {
 }
 
 async function connected(page: Page) {
-	await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 }
 
 async function reload(page: Page) {

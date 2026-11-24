@@ -14,7 +14,13 @@ const option = (name: string) => page.getByRole('option', { name, exact: true })
 
 /** The document as the form would send it. */
 const saved = () =>
-	JSON.parse((document.querySelector('input[name="body"]') as HTMLInputElement).value);
+	JSON.parse(
+		JSON.stringify(
+			(
+				document.querySelector('.ProseMirror') as HTMLElement & { editor: { getJSON(): object } }
+			).editor.getJSON()
+		)
+	);
 
 async function type(text: string) {
 	await box().click();

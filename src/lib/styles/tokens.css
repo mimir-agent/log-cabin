@@ -226,6 +226,10 @@
 		--tap-min: 2.75rem; /* 44: the smallest target a finger can hit */
 		/* A bottom edge's padding: clear of the home indicator, or the floor where there is none. */
 		--safe-bottom: max(env(safe-area-inset-bottom), 8px);
+		/* Where the on-screen keyboard is, written by trackKeyboard (lib/editor/keyboard.ts). */
+		--keyboard-inset: 0px; /* the gap between the layout viewport's bottom and the visible bottom */
+		--visual-h: 100dvh; /* the height of what the person can see */
+		--visual-top: 0px; /* where the visible area starts, once the page is panned inside it */
 		/* Reading columns. The feed is 700px, a post or note 756px. */
 		--measure: 43.75rem;
 		--column-post: 47.25rem;

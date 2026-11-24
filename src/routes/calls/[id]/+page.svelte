@@ -6,6 +6,7 @@
 	import CallRoom from '#lib/components/calls/CallRoom.svelte';
 	import EndedCall from '#lib/components/calls/EndedCall.svelte';
 	import InviteDialog from '#lib/components/calls/InviteDialog.svelte';
+	import ShareDialog from '#lib/components/calls/ShareDialog.svelte';
 	import RecordingBar from '#lib/components/calls/RecordingBar.svelte';
 	import RecordingsMenu from '#lib/components/calls/RecordingsMenu.svelte';
 	import RecordingList from '#lib/components/calls/RecordingList.svelte';
@@ -83,6 +84,9 @@
 			reminder={data.followUps[data.call.id]}
 			size="sm"
 		/>
+		{#if data.channels}
+			<ShareDialog channels={data.channels} share={data.share} />
+		{/if}
 		{@render endForEveryone()}
 		{#if data.canEnd && data.call.ended && data.recording.recordings.length && data.recording.recordings.every((r) => r.status !== 'processing')}
 			<RecordingsMenu />

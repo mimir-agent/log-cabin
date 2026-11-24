@@ -17,7 +17,7 @@ async function open(browser: Browser, who: Person, noteId = trip.id): Promise<Pa
 	await context.addCookies([{ name: 'campfire_session', value: people[who].token, url: baseURL }]);
 	const page = await context.newPage();
 	await page.goto(`/notes/${noteId}`);
-	await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	return page;
 }
 
@@ -120,7 +120,7 @@ test('a note written before live editing opens with its content intact', async (
 	await expect(body(page).locator('strong')).toHaveText('north gate');
 	await expect(body(page).locator('li')).toHaveText(['Water', 'Maps']);
 	await page.reload();
-	await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	// Seeded once: reopening doesn't add the stored body a second time.
 	await expect(body(page).locator('li')).toHaveText(['Water', 'Maps']);
 	await page.context().close();
@@ -230,7 +230,7 @@ test('what someone types offline merges when they come back', async ({ browser }
 	expect(await written(bo)).not.toContain('offline-compass');
 
 	await ada.context().setOffline(false);
-	await expect(ada.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(ada.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	await expect.poll(() => written(bo)).toContain('offline-compass');
 	await expect.poll(() => written(ada)).toContain('Online-rope');
 	expect(await written(ada)).toBe(await written(bo));

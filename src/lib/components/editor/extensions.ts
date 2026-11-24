@@ -73,7 +73,7 @@ export function mentionSuggestion(
  * mentionSuggestion's list goes. Add it after chatKeys, like the mention list, so its Enter and
  * Tab come first.
  */
-export function slashMenu(): AnyExtension {
+export function slashMenu(inserts: () => SlashItem[] = () => []): AnyExtension {
 	return Extension.create({
 		name: 'slashMenu',
 		addProseMirrorPlugins() {
@@ -83,7 +83,7 @@ export function slashMenu(): AnyExtension {
 					pluginKey: slashKey,
 					char: '/',
 					findSuggestionMatch: slashMatch,
-					items: ({ query }) => filterSlash(query),
+					items: ({ query }) => filterSlash(query, inserts()),
 					command: ({ editor, range, props }) => applySlash(editor, range, props),
 					render: suggestionRender<SlashItem, SlashItem>({
 						mount: (target, props, onselect) =>

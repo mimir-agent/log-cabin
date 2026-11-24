@@ -11,6 +11,7 @@ import type { SignedIn } from '../auth/session';
 import { calls as strings } from '../../strings/calls';
 import { acceptOnJoin, cancelRinging } from './invitations';
 import { placeOf, type CallPlace } from './places';
+import { isSharedWith } from './shares';
 import * as sfu from './sfu';
 import { endRecording, syncRecording } from '../recordings/recordings';
 
@@ -66,7 +67,8 @@ export async function canSeePlace(
 /**
  * Who can see a call. A live one: whoever can see its place. An ended one is a record of
  * who talked: the people who were in it, and whoever can see its project or thread; a
- * personal room's past calls only its owner and the people who were in them.
+ * personal room's past calls only its owner and the people who were in them. Either way,
+ * whoever can see the channel the call was shared into.
  */
 export async function canSeeCall(
 	env: Env,
@@ -75,7 +77,11 @@ export async function canSeeCall(
 	call: CallRow
 ): Promise<boolean> {
 	const place = placeOf(call);
-	if (call.endedAt === null) return canSeePlace(env, userId, member, place);
+	if (call.endedAt === null) {
+		return (
+			(await canSeePlace(env, userId, member, place)) || isSharedWith(env, userId, member, call.id)
+		);
+	}
 	if (place.kind === 'room' ? place.id === userId : await canSeePlace(env, userId, member, place)) {
 		return true;
 	}
@@ -85,7 +91,7 @@ export async function canSeeCall(
 		.from(p)
 		.where(and(eq(p.callId, call.id), eq(p.userId, userId)))
 		.get();
-	return !!took;
+	return !!took || isSharedWith(env, userId, member, call.id);
 }
 
 async function assertCanSeePlace(env: Env, who: SignedIn, place: CallPlace) {
@@ -465,7 +471,12 @@ export async function liveCall(env: Env, place: CallPlace, now = Date.now()) {
 		.from(calls)
 		.where(and(eq(placeColumn(place), place.id), isNull(calls.endedAt)))
 		.get();
-	if (!call || !(await settle(env, call, now))) return null;
+	return call ? liveSummary(env, call, now) : null;
+}
+
+/** A live call and who's in it, or null once it turns out to be over. */
+export async function liveSummary(env: Env, call: CallRow, now = Date.now()) {
+	if (!(await settle(env, call, now))) return null;
 	const people = await activeParticipants(env, call.id);
 	return { id: call.id, startedAt: call.startedAt, names: [...new Set(people.map((p) => p.name))] };
 }

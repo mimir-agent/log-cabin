@@ -118,6 +118,8 @@ or the backdrop, keeps what was typed as a draft. Publishing closes it and says 
 <style>
 	/* The dialog is the card here: the composer drops its own corners and shadow and fills it. */
 	.new-post {
+		/* The dialog is already above the keyboard: its footer sticks to its own bottom. */
+		--footer-inset: 0px;
 		display: flex;
 		flex: 1;
 		flex-direction: column;

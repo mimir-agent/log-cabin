@@ -30,6 +30,8 @@ Campsite's drawer instead: a sheet from the bottom of the screen with 44px rows 
 		align?: 'start' | 'center' | 'end';
 		/** At least this wide; long device names and labels make it wider, up to 20rem. */
 		minWidth?: string;
+		/** Where focus goes when it closes; the default is back to the button. */
+		onCloseAutoFocus?: (event: Event) => void;
 	};
 
 	let {
@@ -39,7 +41,8 @@ Campsite's drawer instead: a sheet from the bottom of the screen with 44px rows 
 		sheetHeader,
 		side = 'bottom',
 		align = 'start',
-		minWidth = '13.75rem'
+		minWidth = '13.75rem',
+		onCloseAutoFocus
 	}: Props = $props();
 </script>
 
@@ -51,7 +54,7 @@ Campsite's drawer instead: a sheet from the bottom of the screen with 44px rows 
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Portal>
 		{#if open}<div class="backdrop" aria-hidden="true"></div>{/if}
-		<DropdownMenu.Content {side} {align} sideOffset={8} collisionPadding={8}>
+		<DropdownMenu.Content {side} {align} sideOffset={8} collisionPadding={8} {onCloseAutoFocus}>
 			{#snippet child({ wrapperProps, props })}
 				<div {...wrapperProps} class="wrapper">
 					<div {...props} class="menu" style:--menu-min-w={minWidth}>

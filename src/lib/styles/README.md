@@ -90,6 +90,8 @@ inside the content use the utilities `u:type-display` (a post's or note's own ti
   it in both height and width.
 - Safe areas: `--safe-bottom` is the inset of the bottom edge with a floor, for a surface
   anchored there that has no padding of its own (`viewport-fit=cover` makes the inset real).
+  A bottom-anchored editor surface offsets by `--keyboard-inset`, and a box that must fit above
+  the keyboard sizes itself from `--visual-h` and `--visual-top`.
 - Radius: `--radius-control` for buttons, inputs and rows; `--radius-surface` for popovers and
   dialogs; `--radius-full` for avatars and pills.
 - Elevation is for things that float: `--elevation-popover` (menus, popovers),

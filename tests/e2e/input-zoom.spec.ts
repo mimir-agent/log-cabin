@@ -112,7 +112,7 @@ const fields: {
 		who: 'ada',
 		path: `/notes/${notes.trip.id}`,
 		field: async (page) => {
-			await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+			await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 			return page.getByRole('textbox', { name: /^Write something/ });
 		},
 		desktop: 15

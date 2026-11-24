@@ -42,8 +42,8 @@ describe('the resolve dialog’s AI draft', () => {
 		await expect
 			.element(page.getByRole('textbox', { name: s.placeholder }))
 			.toHaveTextContent('Shipped on Friday');
-		const saved = document.querySelector<HTMLInputElement>('input[name="resolution"]')!;
-		expect(saved.value).toContain('Shipped on Friday');
+		const form = document.querySelector('.ProseMirror')!.closest('form')!;
+		expect(new FormData(form).get('resolution')).toContain('Shipped on Friday');
 		expect(requested).toHaveLength(1);
 		expect(requested[0]).toContain('?/draft');
 	});

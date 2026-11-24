@@ -14,7 +14,7 @@ async function open(browser: Browser, who: Person): Promise<Page> {
 	await context.addCookies([{ name: 'campfire_session', value: people[who].token, url: baseURL }]);
 	const page = await context.newPage();
 	await page.goto(`/notes/${camp.id}`);
-	await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(page.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	return page;
 }
 
@@ -70,11 +70,11 @@ test('a section and a js code block one editor writes reach the other and surviv
 	await expect.poll(() => sectionText(bo)).toBe('Tent and stove');
 
 	await ada.reload();
-	await expect(ada.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(ada.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	await expectBlocks(ada);
 	await expect(sectionBody(ada), 'opening is never stored, so it reopens closed').toBeHidden();
 	await bo.reload();
-	await expect(bo.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+	await expect(bo.getByRole('status').filter({ hasText: 'All changes saved' })).toBeVisible();
 	await expectBlocks(bo);
 
 	await ada.context().close();

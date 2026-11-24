@@ -8,8 +8,10 @@ import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import { absolutePositionToRelativePosition, ySyncPluginKey } from '@tiptap/y-tiptap';
 import * as Y from 'yjs';
 import * as buf from 'lib0/buffer';
+import type { Awareness } from 'y-protocols/awareness';
 import type { NoteConnection } from '#lib/notes/connection.js';
 import type { LiveUser } from '#lib/notes/live.js';
+import { atMostEvery } from './own-cursor.js';
 
 /**
  * Words selected in the note: where they end on screen (client coordinates, under the last
@@ -98,6 +100,30 @@ function commentPassages({ onselect, onopen }: CommentPassages): AnyExtension {
 }
 
 /**
+ * The cursor plugin redraws everyone's cursors on each awareness change, ours moving with every
+ * key included, though it never draws ours. This awareness tells it only of changes that came
+ * from others, which leaves a key one transaction instead of two.
+ */
+function changesFromOthers(awareness: Awareness) {
+	type Listener = (changes: unknown, origin: unknown) => void;
+	const wrapped = new Map<Listener, Listener>();
+	return Object.assign(Object.create(awareness) as Awareness, {
+		on(name: string, listener: Listener) {
+			if (name !== 'change') return awareness.on(name, listener);
+			const fromOthers: Listener = (changes, origin) => {
+				if (origin !== 'local') listener(changes, origin);
+			};
+			wrapped.set(listener, fromOthers);
+			awareness.on(name, fromOthers);
+		},
+		off(name: string, listener: Listener) {
+			awareness.off(name, wrapped.get(listener) ?? listener);
+			wrapped.delete(listener);
+		}
+	});
+}
+
+/**
  * The shared document and everyone's cursors, in place of the editor's own history, and with
  * what the page needs for comments on selected words.
  */
@@ -105,7 +131,7 @@ export function liveExtensions(live: NoteConnection, passages: CommentPassages):
 	return [
 		Collaboration.configure({ document: live.doc }),
 		CollaborationCaret.configure({
-			provider: live,
+			provider: { awareness: atMostEvery(100, changesFromOthers(live.awareness)) },
 			user: live.user,
 			render: caret,
 			selectionRender: (user: LiveUser) => ({ class: 'live-selection', 'data-hue': user.hue })

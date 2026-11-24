@@ -5,11 +5,8 @@ import { findSuggestionMatch } from '@tiptap/suggestion';
 import { editor as text } from '../strings/editor';
 import { nextHour, timeNode } from './extensions';
 
-export type SlashItem = {
-	label: string;
-	hint: string;
-	/** Other words that find the item; never shown. */
-	aliases: string[];
+/** A block type: what picking it turns the block the caret is in into. */
+type Block = {
 	/** Whether the caret is already in this item's block, so picking it only removes the typed text. */
 	isIn?: (editor: Editor) => boolean;
 	/** Whether picking it puts something at the caret, not a block of its own. */
@@ -17,6 +14,17 @@ export type SlashItem = {
 	/** Turns the block the caret is in into this item's. */
 	run: (chain: ChainedCommands) => ChainedCommands;
 };
+
+export type SlashItem = {
+	label: string;
+	hint: string;
+	/** Other words that find the item; never shown. */
+	aliases: string[];
+} & (
+	| Block
+	/** An insert that isn't a block (a file chooser): runs once the typed text is gone. */
+	| { act: () => void }
+);
 
 const listKinds = ['bulletList', 'orderedList', 'taskList'];
 
@@ -42,17 +50,17 @@ const blocks = {
 		run: (chain) =>
 			chain.insertContent([timeNode(nextHour().getTime()), { type: 'text', text: ' ' }])
 	}
-} satisfies Record<string, Pick<SlashItem, 'isIn' | 'inline' | 'run'>>;
+} satisfies Record<string, Block>;
 
 /** In the order the menu lists them. */
 export const slashItems: SlashItem[] = (Object.keys(blocks) as (keyof typeof blocks)[]).map(
 	(id) => ({ ...text.slash[id], ...blocks[id] })
 );
 
-/** The items whose label or an alias contains what was typed after `/`, in menu order. */
-export function filterSlash(query: string): SlashItem[] {
+/** The items whose label or an alias contains what was typed after `/`, in order: the blocks, then `inserts`. */
+export function filterSlash(query: string, inserts: SlashItem[] = []): SlashItem[] {
 	const typed = query.toLowerCase();
-	return slashItems.filter(
+	return [...slashItems, ...inserts].filter(
 		(item) =>
 			item.label.toLowerCase().includes(typed) ||
 			item.aliases.some((alias) => alias.includes(typed))
@@ -91,6 +99,11 @@ export function applySlash(editor: Editor, range: Range, item: SlashItem) {
 	const typed = range.to - range.from;
 	const $from = editor.state.doc.resolve(range.from);
 	const chain = editor.chain().focus().deleteRange(range);
+	if ('act' in item) {
+		chain.run();
+		item.act();
+		return;
+	}
 	if (item.isIn?.(editor)) {
 		chain.run();
 		return;

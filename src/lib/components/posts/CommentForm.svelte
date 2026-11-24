@@ -255,6 +255,15 @@
 		padding: 0.625rem var(--gap-md);
 	}
 
+	/* A phone: the text scrolls inside the box at 40% of what's visible, so the footer under it
+	   can never be pushed off screen (Campsite's maxHeight 40vh). */
+	@media (max-width: 39.99rem) {
+		.box :global(.editor .content) {
+			max-block-size: calc(var(--visual-h) * 0.4);
+			overflow-y: auto;
+		}
+	}
+
 	.box :global(.editor .note) {
 		grid-column: 1 / -1;
 		padding-inline: var(--gap-md);

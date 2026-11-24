@@ -457,46 +457,47 @@
 				<p class="muted">{posts.comments.empty}</p>
 			{/each}
 		</div>
-		<div class="composer" bind:this={composer}>
-			<div class="column">
-				{#if data.canWrite}
-					{#if replyTarget}
-						<div class="reply-context">
-							<p class="reply-text">
-								<span class="reply-who">{posts.comments.replyingTo(replyTarget.authorName)}</span>
-								<span class="reply-preview">{docText(JSON.parse(replyTarget.body))}</span>
-							</p>
-							<IconButton
-								icon="close"
-								label={posts.comments.cancelReply}
-								size="sm"
-								onclick={() => (replyingTo = null)}
-							/>
-						</div>
-					{/if}
-					<CommentForm
-						action="?/comment"
-						replyTo={replyingTo ?? undefined}
-						listed={data.comments.flatMap((c) => [c.id, ...c.replies.map((r) => r.id)])}
-						members={data.people}
-						customEmoji={orgEmoji.custom}
-						{uploadUrl}
-						placeholder={replyTarget ? posts.comments.replyPlaceholder : posts.comments.placeholder}
-						submitLabel={replyTarget ? posts.comments.submitReply : posts.comments.submit}
-						onsaved={() => (replyingTo = null)}
-					/>
-				{:else}
-					<p class="muted">{posts.comments.readOnly}</p>
-				{/if}
-			</div>
-		</div>
 	</section>
+	<div class="composer" bind:this={composer}>
+		<div class="column">
+			{#if data.canWrite}
+				{#if replyTarget}
+					<div class="reply-context">
+						<p class="reply-text">
+							<span class="reply-who">{posts.comments.replyingTo(replyTarget.authorName)}</span>
+							<span class="reply-preview">{docText(JSON.parse(replyTarget.body))}</span>
+						</p>
+						<IconButton
+							icon="close"
+							label={posts.comments.cancelReply}
+							size="sm"
+							onclick={() => (replyingTo = null)}
+						/>
+					</div>
+				{/if}
+				<CommentForm
+					action="?/comment"
+					replyTo={replyingTo ?? undefined}
+					listed={data.comments.flatMap((c) => [c.id, ...c.replies.map((r) => r.id)])}
+					members={data.people}
+					customEmoji={orgEmoji.custom}
+					{uploadUrl}
+					placeholder={replyTarget ? posts.comments.replyPlaceholder : posts.comments.placeholder}
+					submitLabel={replyTarget ? posts.comments.submitReply : posts.comments.submit}
+					onsaved={() => (replyingTo = null)}
+				/>
+			{:else}
+				<p class="muted">{posts.comments.readOnly}</p>
+			{/if}
+		</div>
+	</div>
 </div>
 
 <style>
 	/* Campsite's post page: the post on the page's own white in a 756px column, then the
 	   comments on a band one step back, with the comment box pinned to the bottom. */
 	.page {
+		--band-bg: light-dark(var(--hue-gray-50), var(--hue-gray-950));
 		display: flex;
 		flex: 1;
 		flex-direction: column;
@@ -514,7 +515,7 @@
 		flex: 1;
 		flex-direction: column;
 		border-block-start: var(--border-w-hairline) solid var(--hue-z0-border);
-		background-color: light-dark(var(--hue-gray-50), var(--hue-gray-950));
+		background-color: var(--band-bg);
 	}
 
 	.post {
@@ -715,11 +716,17 @@
 		white-space: nowrap;
 	}
 
+	/* The comment box sits on the page, outside the comments band, so it can stick to the bottom
+	   of what's visible however few comments there are. */
 	.composer {
 		position: sticky;
-		inset-block-end: 0;
-		margin-block-start: auto;
+		inset-block-end: var(--keyboard-inset);
 		padding-block: var(--gap-md) calc(var(--gap-md) + env(safe-area-inset-bottom));
-		background-color: inherit;
+		background-color: var(--band-bg);
+	}
+
+	/* The keyboard covers the home indicator, so its inset isn't needed while typing. */
+	.composer:has(:global(.ProseMirror-focused)) {
+		padding-block-end: var(--gap-md);
 	}
 </style>

@@ -1,8 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { getEnv } from '#lib/server/platform.js';
 import { requireMember } from '#lib/server/auth/guard.js';
-import { liveCall } from '#lib/server/calls/calls.js';
-import { callHistory } from '#lib/server/calls/history.js';
+import { callHistory, liveCallIn } from '#lib/server/calls/history.js';
 import { callsEnabled } from '#lib/server/calls/sfu.js';
 import { loadProject } from '#lib/server/posts/access.js';
 import { calls as strings } from '#lib/strings/calls.js';
@@ -21,7 +20,7 @@ export const load: PageServerLoad = async (event) => {
 	});
 	return {
 		project: { id: project.id, name: project.name },
-		live: await liveCall(env, place),
+		live: await liveCallIn(env, place),
 		calls: history.calls,
 		more: history.next && `?cursor=${encodeURIComponent(history.next)}`
 	};

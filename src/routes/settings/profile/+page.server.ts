@@ -3,6 +3,7 @@ import { fail } from '@sveltejs/kit';
 import { pendingEmailChange, requestEmailChange } from '#lib/server/auth/email-change.js';
 import { requireMember } from '#lib/server/auth/guard.js';
 import { getMember } from '#lib/server/members.js';
+import { roomPath } from '#lib/server/calls/rooms.js';
 import { saveProfileForm } from '#lib/server/people/profile-form.js';
 import { getOrg } from '#lib/server/org.js';
 import { getObjectUrl } from '#lib/server/storage.js';
@@ -24,7 +25,8 @@ export const load: PageServerLoad = async (event) => {
 			coverUrl: profile.coverKey ? getObjectUrl(profile.coverKey) : null
 		},
 		pendingEmail: await pendingEmailChange(env, user.id),
-		theme: user.theme
+		theme: user.theme,
+		roomPath: roomPath(profile)
 	};
 };
 

@@ -17,6 +17,7 @@
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { subscribe } from '#lib/realtime.js';
+	import { trackKeyboard } from '#lib/editor/keyboard.js';
 	import { zoneCookie, zoneToFollow } from '#lib/time-zone.js';
 	import AppShell from '#lib/components/shell/AppShell.svelte';
 	import Avatar from '#lib/components/shell/Avatar.svelte';
@@ -63,6 +64,7 @@
 	$effect(() => {
 		if ('setAppBadge' in navigator) navigator.setAppBadge(unread);
 	});
+	$effect(trackKeyboard);
 	const userId = $derived(data.user?.id);
 
 	// Opening a page reads what the inbox holds about it, whether it was opened from an inbox

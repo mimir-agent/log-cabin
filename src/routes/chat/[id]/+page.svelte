@@ -546,7 +546,7 @@
 
 	.composer-bar {
 		position: sticky;
-		inset-block-end: 0;
+		inset-block-end: var(--keyboard-inset);
 		display: flex;
 		flex-direction: column;
 		gap: var(--gap-xs);
@@ -555,10 +555,14 @@
 	}
 
 	/* A conversation hides the tab bar on small screens, so the composer sits on the bottom edge,
-	   clear of the home indicator (Campsite's pb-safe-offset-2). */
+	   clear of the home indicator (Campsite's pb-safe-offset-2), until the keyboard covers it. */
 	@media (max-width: 63.99rem) {
 		.composer-bar {
 			padding-block-end: calc(var(--gap-sm) + env(safe-area-inset-bottom));
+		}
+
+		.composer-bar:has(:global(.ProseMirror-focused)) {
+			padding-block-end: var(--gap-sm);
 		}
 	}
 

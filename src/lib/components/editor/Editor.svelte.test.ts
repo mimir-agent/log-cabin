@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import Editor from './Editor.svelte';
@@ -8,8 +8,19 @@ vi.mock('$app/state', () => ({ page: { data: { timeZone: 'UTC' } } }));
 
 const props = { name: 'body', placeholder: 'Write something', members: [] };
 const paragraph = (...content: object[]) => ({ type: 'paragraph', content });
+const saved = () =>
+	JSON.parse(
+		JSON.stringify(
+			(
+				document.querySelector('.ProseMirror') as HTMLElement & { editor: { getJSON(): object } }
+			).editor.getJSON()
+		)
+	);
 
 describe('Editor', () => {
+	// A phone's note has no toolbar, so these tests look at the desktop one.
+	beforeEach(() => page.viewport(1280, 800));
+
 	it('offers the Checklist tool only when asked to', async () => {
 		render(Editor, { ...props, compact: true });
 		await expect.element(page.getByRole('button', { name: 'Bold' })).toBeVisible();
@@ -39,9 +50,7 @@ describe('Editor', () => {
 		await expect
 			.element(page.getByRole('button', { name: 'Close section' }))
 			.toHaveAttribute('aria-expanded', 'true');
-		const body = JSON.parse(
-			(document.querySelector('input[name="body"]') as HTMLInputElement).value
-		);
+		const body = saved();
 		expect(body.content[0], 'opening it changes nothing in the document').toEqual({
 			type: 'details',
 			content: [
@@ -61,9 +70,7 @@ describe('Editor', () => {
 
 		const box = page.getByRole('textbox', { name: 'Write something' }).element();
 		await expect.poll(() => box.querySelector('time')?.textContent).toBe('Wed, Jan 2, 9:30 AM');
-		const body = JSON.parse(
-			(document.querySelector('input[name="body"]') as HTMLInputElement).value
-		);
+		const body = saved();
 		expect(body.content[0].content[1]).toEqual({
 			type: 'relativeTime',
 			attrs: {
@@ -89,9 +96,7 @@ describe('Editor', () => {
 		field.value = '2030-02-03T10:00';
 		field.dispatchEvent(new Event('change', { bubbles: true }));
 		await expect.poll(() => chip.textContent).toBe('Sun, Feb 3, 10:00 AM');
-		const body = JSON.parse(
-			(document.querySelector('input[name="body"]') as HTMLInputElement).value
-		);
+		const body = saved();
 		expect(body.content[0].content[0].attrs).toEqual({
 			timestamp: new Date('2030-02-03T10:00').getTime(),
 			zone: Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -195,9 +200,7 @@ describe('Editor', () => {
 			.poll(() => box.querySelector('a.resource-mention')?.getAttribute('href'))
 			.toBe(`/posts/${id}`);
 		expect(box.querySelector('a.resource-mention')!.textContent).toBe('Harbour budget');
-		const body = JSON.parse(
-			(document.querySelector('input[name="body"]') as HTMLInputElement).value
-		);
+		const body = saved();
 		expect(body.content[0].content[0], 'kind and id only').toEqual({
 			type: 'resourceMention',
 			attrs: { kind: 'post', id }
@@ -268,8 +271,7 @@ describe('Editor', () => {
 		);
 		box.element().dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true }));
 
-		const body = () =>
-			JSON.parse((document.querySelector('input[name="body"]') as HTMLInputElement).value);
+		const body = saved;
 		await expect
 			.poll(() => body().content[0])
 			.toEqual({

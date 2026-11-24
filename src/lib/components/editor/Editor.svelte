@@ -1,19 +1,24 @@
 <script lang="ts">
 	import { onMount, untrack, type Snippet } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { innerWidth } from 'svelte/reactivity/window';
 	import { Editor, type ChainedCommands } from '@tiptap/core';
 	import type { EditorView } from '@tiptap/pm/view';
 	import { TextSelection } from '@tiptap/pm/state';
-	import { Popover, Toolbar } from 'bits-ui';
+	import { DropdownMenu, Popover, Toolbar } from 'bits-ui';
 	import { docImages, type DocNode, type ResourceTitles } from '#lib/editor/doc.js';
 	import { fileNode, uploadFile } from '#lib/editor/upload.js';
 	import { linkHref, localFieldValue, nextHour, timeNode } from '#lib/editor/extensions.js';
+	import { placePopup, visibleArea, watchVisibleArea } from '#lib/editor/suggestion-popup.js';
+	import type { SlashItem } from '#lib/editor/slash.js';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
+	import Menu from '#lib/components/ui/Menu.svelte';
 	import UiPopover from '#lib/components/ui/Popover.svelte';
 	import Tooltip from '#lib/components/ui/Tooltip.svelte';
 	import type { IconName } from '#lib/components/ui/icons/campsite-icons.js';
 	import { editor as text } from '#lib/strings/editor.js';
+	import { notes } from '#lib/strings/notes.js';
 	import {
 		chatKeys,
 		editorExtensions,
@@ -89,6 +94,11 @@
 		 * typing @ there also offers notes, posts and calls.
 		 */
 		resources?: ResourceTitles;
+		/**
+		 * Comments on the selected words. A phone's selection menu shows a Comment button when
+		 * this is given (a note, for someone who may discuss it).
+		 */
+		oncomment?: () => void;
 	};
 
 	const {
@@ -116,7 +126,8 @@
 		live,
 		gallery = false,
 		image,
-		resources = {}
+		resources = {},
+		oncomment
 	}: Props = $props();
 
 	type Tool = {
@@ -220,17 +231,22 @@
 					...noteTools
 				]
 	);
+	// A phone's selection menu keeps Bold, Italic, Code and Link on the row; every other block
+	// type and mark goes into its Format menu, blocks first.
+	const blockTools = $derived(
+		tools.filter((tool) => !['bold', 'italic', 'strike', 'code', 'kbd'].includes(tool.type))
+	);
+	const markTools = $derived(tools.filter((tool) => ['strike', 'kbd'].includes(tool.type)));
 
 	let element = $state<HTMLDivElement>();
 	let fileInput = $state<HTMLInputElement>();
 	let tiptap = $state.raw<Editor>();
-	let doc = $state.raw<DocNode>(untrack(() => value) ?? { type: 'doc', content: [] });
 	let active = $state<Set<Tool>>(new Set());
 	let linkActive = $state(false);
 	/** The document's image open in the lightbox, by reading order. */
 	let shown = $state<number | null>(null);
 	const lightboxImages = $derived(
-		docImages(doc).map((node) => ({
+		(shown === null || !tiptap ? [] : docImages(tiptap.getJSON() as DocNode)).map((node) => ({
 			src: String(node.attrs?.src),
 			alt: String(node.attrs?.alt ?? '')
 		}))
@@ -243,8 +259,13 @@
 			if (gone) return;
 			instance = create(extra);
 			tiptap = instance;
-			doc = instance.getJSON() as DocNode;
 		};
+		// The form gets the document when it is sent, not after every key.
+		const form = element?.closest('form');
+		const send = (event: FormDataEvent) => {
+			if (instance) event.formData.set(name, JSON.stringify(instance.getJSON()));
+		};
+		form?.addEventListener('formdata', send);
 		// A note's own blocks bring every highlighting grammar, so only a note's editor loads them.
 		if (note) {
 			void import('./note-extensions.js').then((m) =>
@@ -253,9 +274,36 @@
 		} else start([]);
 		return () => {
 			gone = true;
+			form?.removeEventListener('formdata', send);
 			instance?.destroy();
 		};
 	});
+
+	/**
+	 * A phone's sticky footer sits over the bottom of the scroll area, so the caret is scrolled
+	 * clear of it before ProseMirror's own scrolling, which only knows the area's edge.
+	 */
+	function clearFooter(view: EditorView) {
+		const footer = phone.current
+			? element?.closest('[data-has-footer]')?.querySelector('[data-footer]')
+			: null;
+		if (!footer) return false;
+		const hidden =
+			view.coordsAtPos(view.state.selection.head).bottom + 8 - footer.getBoundingClientRect().top;
+		if (hidden > 0) scrollParent(footer).scrollBy(0, hidden);
+		return false;
+	}
+
+	function scrollParent(from: Element): Element {
+		for (let node = from.parentElement; node; node = node.parentElement) {
+			if (
+				/auto|scroll/.test(getComputedStyle(node).overflowY) &&
+				node.scrollHeight > node.clientHeight
+			)
+				return node;
+		}
+		return document.scrollingElement!;
+	}
 
 	function create(extra: AnyExtension[]): Editor {
 		return new Editor({
@@ -270,7 +318,7 @@
 					live,
 					extra
 				}),
-				...(slash ? [slashMenu()] : []),
+				...(slash ? [slashMenu(() => inserts)] : []),
 				...(gallery ? [Gallery] : [])
 			],
 			content: live ? undefined : value,
@@ -282,6 +330,7 @@
 					class: 'prose',
 					...(size ? { 'data-size': size } : {})
 				}),
+				handleScrollToSelection: clearFooter,
 				handlePaste: (_view, event) => uploadFrom(event.clipboardData?.files),
 				handleDrop: (view, event, _slice, moved) => !moved && dropFiles(view, event),
 				// Leaves the click to select the image too, so it can still be deleted or dragged.
@@ -298,15 +347,16 @@
 				}
 			},
 			onTransaction: ({ editor }) => {
-				active = new Set(tools.filter((tool) => editor.isActive(tool.type, tool.attrs)));
+				const now = tools.filter((tool) => editor.isActive(tool.type, tool.attrs));
+				if (now.length !== active.size || now.some((tool) => !active.has(tool))) {
+					active = new Set(now);
+				}
 				linkActive = editor.isActive('link');
 				placeBubble(editor);
 			},
 			onBlur: ({ editor }) => placeBubble(editor),
 			onUpdate: ({ editor }) => {
-				const json = editor.getJSON() as DocNode;
-				doc = json;
-				onupdate?.(json);
+				onupdate?.(editor.getJSON() as DocNode);
 			}
 		});
 	}
@@ -459,22 +509,58 @@
 
 	// The selection menu: over the middle of selected text while the editor has focus, as
 	// Campsite's bubble menu is, kept on screen. Not over a code block, where marks don't show.
-	let bubbleAt = $state<{ top: number; left: number } | null>(null);
+	// A phone's note gets it too, in place of the toolbar, with its tools grouped (phoneTools).
+	const phone = new MediaQuery('(max-width: 39.99rem)');
+	const touch = new MediaQuery('(pointer: coarse)');
+	const bubbled = $derived(bubble || (phone.current && note && formatting));
+	let formatOpen = $state(false);
+	// The sheet needs the keyboard gone; the menu stays while the editor has no focus.
+	$effect(() => {
+		if (formatOpen) tiptap?.commands.blur();
+	});
+	let bubbleAt = $state<{ top: number; bottom: number; left: number } | null>(null);
 	let bubbleWidth = $state(0);
+	let bubbleHeight = $state(0);
 	const bubbleLeft = $derived.by(() => {
 		if (!bubbleAt) return 0;
 		// 8px clear of the screen's edges, as Campsite's menus keep.
 		const half = bubbleWidth / 2 + 8;
 		return Math.min(Math.max(bubbleAt.left, half), (innerWidth.current ?? Infinity) - half);
 	});
+	/**
+	 * On a touch screen the menu goes 12px below the selection, where the system's own callout
+	 * isn't, and above it (8px) only when there is no room below: the visible area's bottom or
+	 * the surface's sticky footer, whichever is higher. It never covers the footer.
+	 */
+	const touchAt = $derived.by(() => {
+		if (!bubbleAt) return { left: 0, top: 0 };
+		const visible = visibleArea();
+		const footer = element
+			?.closest('[data-has-footer]')
+			?.querySelector('[data-footer]')
+			?.getBoundingClientRect().top;
+		const bottom = Math.min(visible.top + visible.height, footer ?? Infinity) - 8;
+		return placePopup(
+			{ left: bubbleAt.left - bubbleWidth / 2, top: bubbleAt.top, bottom: bubbleAt.bottom },
+			{ width: bubbleWidth, height: bubbleHeight },
+			{
+				left: visible.left + 8,
+				top: visible.top + 8,
+				width: visible.width - 16,
+				height: bottom - visible.top - 8
+			},
+			12,
+			8
+		);
+	});
 
 	function placeBubble(editor: Editor) {
 		const { selection } = editor.state;
 		const show =
-			bubble &&
+			bubbled &&
 			selection instanceof TextSelection &&
 			!selection.empty &&
-			(editor.isFocused || linkOpen) &&
+			(editor.isFocused || linkOpen || formatOpen) &&
 			!editor.isActive('codeBlock');
 		if (!show) {
 			bubbleAt = null;
@@ -482,8 +568,17 @@
 		}
 		const start = editor.view.coordsAtPos(selection.from);
 		const end = editor.view.coordsAtPos(selection.to);
-		bubbleAt = { top: Math.min(start.top, end.top), left: (start.left + end.right) / 2 };
+		bubbleAt = {
+			top: Math.min(start.top, end.top),
+			bottom: Math.max(start.bottom, end.bottom),
+			left: (start.left + end.right) / 2
+		};
 	}
+
+	// The visual viewport moves under a menu that is up (the keyboard opens, a pan): place it again.
+	$effect(() => {
+		if (bubbleAt && touch.current) return watchVisibleArea(() => tiptap && placeBubble(tiptap));
+	});
 
 	// A note's date and time: picked in the reader's own zone, stored as its instant and that zone.
 	// It starts at the next full hour: a picker left half filled reports no value, and Insert
@@ -505,6 +600,11 @@
 			.run();
 		timeOpen = false;
 	}
+
+	/** What `/` offers besides blocks: a file, where files can go. */
+	const inserts = $derived<SlashItem[]>([
+		...(uploadUrl ? [{ ...text.slash.file, act: () => fileInput?.click() }] : [])
+	]);
 
 	// The toolbar draws Campsite's icons where it has one for a tool; the rest keep their glyph.
 	const toolIcons: Record<string, IconName> = {
@@ -553,14 +653,15 @@
 	/>
 {/snippet}
 
-{#snippet formatTools()}
-	{#each tools as tool (tool.label)}
-		<Toolbar.Button {disabled} onclick={() => run(tool)}>
-			{#snippet child({ props })}
-				{@render toolButton(props, tool.label, tool.glyph, active.has(tool))}
-			{/snippet}
-		</Toolbar.Button>
-	{/each}
+{#snippet toolRow(tool: Tool)}
+	<Toolbar.Button {disabled} onclick={() => run(tool)}>
+		{#snippet child({ props })}
+			{@render toolButton(props, tool.label, tool.glyph, active.has(tool))}
+		{/snippet}
+	</Toolbar.Button>
+{/snippet}
+
+{#snippet linkTool()}
 	<Tooltip label={text.link} shortcut={text.linkKeys} {disabled}>
 		{#snippet trigger({ props: tip })}
 			<Toolbar.Button {...tip} onclick={openLinkField}>
@@ -570,6 +671,67 @@
 			</Toolbar.Button>
 		{/snippet}
 	</Tooltip>
+{/snippet}
+
+{#snippet formatTools()}
+	{#each tools as tool (tool.label)}{@render toolRow(tool)}{/each}
+	{@render linkTool()}
+{/snippet}
+
+{#snippet formatRow(tool: Tool)}
+	<DropdownMenu.CheckboxItem checked={active.has(tool)} onSelect={() => run(tool)}>
+		{tool.label}
+	</DropdownMenu.CheckboxItem>
+{/snippet}
+
+<!-- A phone's selection menu: one row, so every button is a 44px target and nothing overflows. -->
+{#snippet phoneTools()}
+	{@const current = blockTools.find((tool) => active.has(tool))}
+	{@const icon = current ? toolIcons[current.glyph] : 'text-align-left'}
+	<Menu
+		bind:open={formatOpen}
+		onCloseAutoFocus={(event) => {
+			event.preventDefault();
+			tiptap?.commands.focus();
+		}}
+	>
+		{#snippet trigger({ props: trigger })}
+			<Toolbar.Button {...trigger} {disabled}>
+				{#snippet child({ props })}
+					<button type="button" {...props} class="tool format" aria-label={text.formatMenu.label}>
+						{#if icon}<Icon name={icon} />{:else}{current?.glyph}{/if}
+						<Icon name="chevron-down" />
+					</button>
+				{/snippet}
+			</Toolbar.Button>
+		{/snippet}
+		<DropdownMenu.CheckboxItem
+			checked={!current}
+			onSelect={() => tiptap?.chain().focus().clearNodes().run()}
+		>
+			{text.formatMenu.text}
+		</DropdownMenu.CheckboxItem>
+		{#each blockTools as tool (tool.label)}{@render formatRow(tool)}{/each}
+		{#if markTools.length}
+			<DropdownMenu.Separator />
+			{#each markTools as tool (tool.label)}{@render formatRow(tool)}{/each}
+		{/if}
+	</Menu>
+	{@render toolRow(bold)}
+	{@render toolRow(italic)}
+	{@render toolRow(code)}
+	<span class="divider" aria-hidden="true"></span>
+	{@render linkTool()}
+	{#if oncomment}
+		<span class="divider" aria-hidden="true"></span>
+		<Toolbar.Button {disabled} onclick={oncomment}>
+			{#snippet child({ props })}
+				<button type="button" {...props} class="tool" aria-label={notes.passage.comment}>
+					<Icon name="chat-bubble" />
+				</button>
+			{/snippet}
+		</Toolbar.Button>
+	{/if}
 {/snippet}
 
 {#snippet toolbar()}
@@ -617,7 +779,12 @@
 	{/if}
 {/snippet}
 
-<div class="editor" data-compact={compact || undefined} aria-busy={uploading > 0}>
+<div
+	class="editor"
+	data-compact={compact || undefined}
+	data-note={note || undefined}
+	aria-busy={uploading > 0}
+>
 	{#if !toolbarLast}{@render toolbar()}{/if}
 	<div class="content" bind:this={element}></div>
 	{#if note}<NoteLinkCard root={element} />{/if}
@@ -630,12 +797,14 @@
 				<div
 					{...props}
 					class="toolbar bubble"
-					style:inset-block-start="{at.top}px"
-					style:inset-inline-start="{bubbleLeft}px"
+					data-touch={touch.current || undefined}
+					style:inset-block-start="{touch.current ? touchAt.top : at.top}px"
+					style:inset-inline-start="{touch.current ? touchAt.left : bubbleLeft}px"
 					bind:clientWidth={bubbleWidth}
+					bind:clientHeight={bubbleHeight}
 					onmousedown={(event) => event.preventDefault()}
 				>
-					{@render formatTools()}
+					{#if phone.current}{@render phoneTools()}{:else}{@render formatTools()}{/if}
 				</div>
 			{/snippet}
 		</Toolbar.Root>
@@ -680,7 +849,6 @@
 			</Popover.Content>
 		</Popover.Portal>
 	</Popover.Root>
-	<input type="hidden" {name} value={JSON.stringify(doc)} />
 	{#if uploading > 0}<p class="note" role="status">{text.uploading}</p>{/if}
 	{#if uploadErrors.length}
 		<div class="note" role="alert">
@@ -754,6 +922,33 @@
 		background-color: var(--hue-z2-bg);
 		box-shadow: var(--elevation-popover);
 		translate: -50% calc(-100% - var(--gap-sm));
+	}
+
+	.bubble[data-touch] {
+		translate: none;
+	}
+
+	/* A phone: one row of 44px targets, and a note's toolbar gives way to the selection menu. */
+	@media (max-width: 39.99rem) {
+		.bubble {
+			flex-wrap: nowrap;
+		}
+
+		.bubble .tool {
+			min-inline-size: var(--tap-min);
+			block-size: var(--tap-min);
+		}
+
+		.editor[data-note] > :global(.toolbar:not(.bubble)) {
+			display: none;
+		}
+	}
+
+	.format {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding-inline: 0;
 	}
 
 	.divider {

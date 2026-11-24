@@ -71,7 +71,7 @@ its submit and cancel buttons in the titlebar, tied to this form by `id`.
 		background: none;
 	}
 
-	.body :global(.editor .toolbar) {
+	.body :global(.editor .toolbar:not(.bubble)) {
 		position: sticky;
 		inset-block-start: var(--header-h);
 		z-index: 1;
@@ -79,16 +79,6 @@ its submit and cancel buttons in the titlebar, tied to this form by `id`.
 		padding: var(--gap-xs) 0;
 		border-block-end: 0;
 		background-color: var(--hue-z0-bg);
-	}
-
-	/* On a phone the tools stay one row and scroll sideways under a fade, as in the composer. */
-	@media (max-width: 39.99rem) {
-		.body :global(.editor .toolbar) {
-			flex-wrap: nowrap;
-			overflow-x: auto;
-			scrollbar-width: none;
-			mask-image: linear-gradient(to left, transparent, black var(--gap-lg));
-		}
 	}
 
 	.body :global(.editor .content) {

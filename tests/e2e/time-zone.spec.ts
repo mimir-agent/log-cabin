@@ -64,14 +64,14 @@ test("recent calls' times are the reader's from the server's first byte", async 
 	const context = await browser.newContext({ baseURL, timezoneId: 'America/Los_Angeles' });
 	await context.addCookies([{ name: 'campfire_session', value: people.ada.token, url: baseURL }]);
 	const page = await context.newPage();
-	const local = 'Nov 18, 2026, 7:58 PM';
+	const local = 'Nov 18 · 7:58 PM';
 
 	await page.goto(`/chat/${pastCall.threadId}`);
 	await expect(page.getByText(local)).toBeVisible();
 
 	// What the server sends this browser now, before any script runs.
-	const html = await (await context.request.get(`/chat/${pastCall.threadId}`)).text();
+	const html = spaced(await (await context.request.get(`/chat/${pastCall.threadId}`)).text());
 	expect(html).toContain(local);
-	expect(html).not.toContain('Nov 19, 2026, 3:58 AM');
+	expect(html).not.toContain('Nov 19 · 3:58 AM');
 	await context.close();
 });

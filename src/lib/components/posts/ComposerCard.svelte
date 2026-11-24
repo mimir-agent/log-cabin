@@ -67,6 +67,24 @@
 	});
 
 	let card: HTMLElement;
+	let end: HTMLElement;
+	let footer: HTMLElement;
+	/** Text sits under the footer, which a phone pins to the bottom of what's visible. */
+	let underFooter = $state(false);
+	onMount(() => {
+		const update = () => {
+			underFooter = end.getBoundingClientRect().top > footer.getBoundingClientRect().top + 1;
+		};
+		// Scroll events don't bubble; the capture phase sees the page's and the dialog's alike.
+		document.addEventListener('scroll', update, { capture: true, passive: true });
+		const resized = new ResizeObserver(update);
+		resized.observe(card);
+		update();
+		return () => {
+			document.removeEventListener('scroll', update, { capture: true });
+			resized.disconnect();
+		};
+	});
 	// Enter in the subject goes on to the body, as in Campsite, rather than sending the form.
 	function toBody(event: KeyboardEvent) {
 		if (event.key !== 'Enter' || event.isComposing) return;
@@ -82,7 +100,7 @@
 	parts take places in this grid. Formatting comes from the menu over selected text.
 -->
 <div class="composer">
-	<div class="composer-card" bind:this={card}>
+	<div class="composer-card" bind:this={card} data-has-footer data-under={underFooter || undefined}>
 		<header class="head">
 			{#if project}
 				{@render project()}
@@ -130,7 +148,8 @@
 			}}
 		/>
 		{#if children}<div class="extras">{@render children()}</div>{/if}
-		<div class="actions">
+		<span class="end" bind:this={end} aria-hidden="true"></span>
+		<div class="actions" bind:this={footer} data-footer>
 			{#if cancelHref}
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolved hrefs -->
 				<a class="cancel" href={cancelHref}>{s.cancel}</a>
@@ -164,7 +183,7 @@
 			'extras extras'
 			'note note'
 			'toolbar actions';
-		overflow: hidden;
+		overflow: clip;
 		border-radius: var(--radius-card);
 		background-color: var(--hue-z2-bg);
 		box-shadow: var(--elevation-dialog);
@@ -345,8 +364,35 @@
 		background-color: var(--hue-fill);
 	}
 
-	/* A phone: the edit page's header back arrow already leaves without saving. */
+	/* A phone: the files and Post stay at the bottom of what's visible, above the keyboard, with
+	   the text scrolling under them (Campsite's sticky footer). The hairline shows only while
+	   text is under the footer. */
+	.end {
+		grid-area: note;
+		align-self: end;
+	}
+
 	@media (max-width: 39.99rem) {
+		.composer-card :global(.editor .toolbar:not(.bubble)),
+		.actions {
+			position: sticky;
+			inset-block-end: var(--footer-inset, var(--keyboard-inset));
+			z-index: 1;
+			border-block-start: var(--border-w-hairline) solid transparent;
+			background-color: var(--hue-z2-bg);
+		}
+
+		.composer-card[data-under] :global(.editor .toolbar:not(.bubble)),
+		.composer-card[data-under] .actions {
+			border-block-start-color: var(--hue-z0-border);
+		}
+
+		/* The keyboard covers the home indicator, so its inset isn't needed while typing. */
+		.composer-card:has(:global(.ProseMirror-focused)) :global(.editor .toolbar:not(.bubble)),
+		.composer-card:has(:global(.ProseMirror-focused)) .actions {
+			padding-block-end: var(--gap-sm);
+		}
+
 		.cancel {
 			display: none;
 		}

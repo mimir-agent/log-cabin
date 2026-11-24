@@ -20,9 +20,10 @@ import { readThreadNaming, threadNaming } from '../chat/threads';
 import { visibleProjectIds } from '../posts/access';
 import { calls as strings } from '../../strings/calls';
 import { summaryPreview } from '../recordings/transcripts';
-import { canSeePlace, liveCall, placeColumn } from './calls';
+import { canSeeCall, canSeePlace, liveCall, liveSummary, placeColumn } from './calls';
 import { placeLink, placeOf, type CallPlace } from './places';
 import { roomPath } from './rooms';
+import { callShare, isSharedWith } from './shares';
 import { callsEnabled } from './sfu';
 
 export const historyFilters = ['all', 'joined'] as const;
@@ -35,9 +36,46 @@ export async function placeCalls(env: Env, who: SignedIn, place: CallPlace) {
 	if (!callsEnabled(env)) return null;
 	const [recent, live] = await Promise.all([
 		callHistory(env, who, { place, limit: 5 }),
-		liveCall(env, place)
+		liveCallIn(env, place)
 	]);
 	return { live, recent: recent.calls };
+}
+
+/** The calls shared into the channel. */
+function sharedInto(env: Env, projectId: string): SQL {
+	const { calls, callShares } = schema;
+	return inArray(
+		calls.id,
+		db(env)
+			.select({ id: callShares.callId })
+			.from(callShares)
+			.where(eq(callShares.projectId, projectId))
+	);
+}
+
+/** The live call a place shows: its own, or for a channel one shared into it. */
+export async function liveCallIn(env: Env, place: CallPlace, now = Date.now()) {
+	const own = await liveCall(env, place, now);
+	if (own || place.kind !== 'project') return own;
+	const { calls } = schema;
+	const shared = await db(env)
+		.select()
+		.from(calls)
+		.where(and(isNull(calls.endedAt), sharedInto(env, place.id)))
+		.get();
+	return shared ? liveSummary(env, shared, now) : null;
+}
+
+/** Where this person is shown the call: its channel when they can't see where it began. */
+export async function placeSeenBy(
+	env: Env,
+	who: SignedIn,
+	call: { id: string; place: CallPlace }
+): Promise<CallPlace> {
+	if (await canSeePlace(env, who.user.id, who.member, call.place)) return call.place;
+	const share = await callShare(env, call.id);
+	const shared = share && (await isSharedWith(env, who.user.id, who.member, call.id));
+	return shared ? { kind: 'project', id: share.projectId } : call.place;
 }
 
 /**
@@ -70,9 +108,14 @@ export async function liveCalls(env: Env, who: SignedIn, now = Date.now()) {
 	const live = await Promise.all(
 		open.map(async (row) => {
 			const place = placeOf(row);
-			if (!(await canSeePlace(env, who.user.id, who.member, place))) return null;
+			if (!(await canSeeCall(env, who.user.id, who.member, row))) return null;
 			const call = await liveCall(env, place, now);
-			return call && { ...call, place: await placeLink(env, who, place) };
+			return (
+				call && {
+					...call,
+					place: await placeLink(env, who, await placeSeenBy(env, who, { id: row.id, place }))
+				}
+			);
 		})
 	);
 	return live.filter((call) => call !== null);
@@ -108,16 +151,25 @@ function tookPartIn(env: Env, who: { user: { id: string } }): SQL {
 /**
  * The ended-call half of the calls.ts rule (canSeeCall) as SQL over the calls table, so a
  * page or a search counts only calls this person may see: they were in it, it was in their
- * own room, in a project they can see, or in a thread they belong to.
+ * own room, in a project they can see, in a thread they belong to, or shared into a channel
+ * they can see.
  */
 export function visibleCalls(env: Env, who: { user: { id: string }; member: { role: Role } }): SQL {
-	const { calls, projects, chatThreadMembers } = schema;
+	const { calls, projects, chatThreadMembers, callShares } = schema;
+	const visibleProjects = db(env)
+		.select({ id: projects.id })
+		.from(projects)
+		.where(visibleProjectIds(who));
 	return or(
 		tookPartIn(env, who),
 		eq(calls.roomOwnerId, who.user.id),
+		inArray(calls.projectId, visibleProjects),
 		inArray(
-			calls.projectId,
-			db(env).select({ id: projects.id }).from(projects).where(visibleProjectIds(who))
+			calls.id,
+			db(env)
+				.select({ id: callShares.callId })
+				.from(callShares)
+				.where(inArray(callShares.projectId, visibleProjects))
 		),
 		inArray(
 			calls.threadId,
@@ -127,6 +179,12 @@ export function visibleCalls(env: Env, who: { user: { id: string }; member: { ro
 				.where(eq(chatThreadMembers.userId, who.user.id))
 		)
 	) as SQL;
+}
+
+/** A call's own place, and for a channel also the calls shared into it. */
+function inPlace(env: Env, place: CallPlace): SQL {
+	const own = eq(placeColumn(place), place.id);
+	return place.kind === 'project' ? (or(own, sharedInto(env, place.id)) as SQL) : own;
 }
 
 /** Everyone who joined each of these calls, members and guests, once each by name. */
@@ -163,7 +221,7 @@ export async function callHistory(
 	const limit = options.limit ?? pageSize;
 	const tookPart = tookPartIn(env, who);
 	const visible = visibleCalls(env, who);
-	const placeColumnFilter = options.place && eq(placeColumn(options.place), options.place.id);
+	const placeFilter = options.place && inPlace(env, options.place);
 	const rows = await db(env)
 		.select({
 			id: calls.id,
@@ -206,7 +264,7 @@ export async function callHistory(
 				exists(db(env).select({ id: p.id }).from(p).where(eq(p.callId, calls.id))),
 				visible,
 				options.filter === 'joined' ? tookPart : undefined,
-				placeColumnFilter,
+				placeFilter,
 				options.cursor ? afterCursor(options.cursor) : undefined,
 				options.since == null ? undefined : gte(calls.startedAt, options.since)
 			)

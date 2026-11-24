@@ -83,3 +83,25 @@ describe('commenting on words in a live note', () => {
 		element.remove();
 	});
 });
+
+/** Lets the tasks the cursor plugin and the sync plugin queue for themselves run. */
+const settle = () => new Promise((done) => setTimeout(done, 50));
+
+describe('typing in a live note', () => {
+	it('is one transaction a key: moving our own cursor does not redraw the others', async () => {
+		const { editor } = readOnlyEditor();
+		await expect.poll(() => editor.getText()).toBe('Walk the ridge early');
+		editor.setEditable(true);
+		await userEvent.click(editor.view.dom);
+		editor.commands.focus('end');
+		expect(editor.view.hasFocus(), 'the editor has focus, as the cursor plugin needs').toBe(true);
+		await settle();
+		let transactions = 0;
+		editor.on('transaction', () => transactions++);
+
+		editor.commands.insertContent('!');
+		await settle();
+
+		expect(transactions).toBe(1);
+	});
+});

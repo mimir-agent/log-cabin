@@ -85,7 +85,12 @@ describe('MessageForm keys', () => {
 
 	it('leaves Enter as a new line on a touch screen, and the button sends', async () => {
 		vi.spyOn(window, 'matchMedia').mockImplementation(
-			(query) => ({ matches: query === '(pointer: coarse)' }) as MediaQueryList
+			(query) =>
+				({
+					matches: query === '(pointer: coarse)',
+					addEventListener() {},
+					removeEventListener() {}
+				}) as unknown as MediaQueryList
 		);
 		const { onsend, box } = setup();
 		await box.click();

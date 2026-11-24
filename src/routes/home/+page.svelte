@@ -3,6 +3,7 @@
   projects. On a phone the sidebar has no room, so this is where it lives; the Home tab opens it.
 -->
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import Avatar from '#lib/components/shell/Avatar.svelte';
 	import CreateMenu from '#lib/components/shell/CreateMenu.svelte';
@@ -23,6 +24,17 @@
 	const s = shell.home;
 	const ids = $props.id();
 	let projectsOpen = $state(true);
+	// The sidebar's Channels group keeps its state under this key; Home shares it.
+	const storageKey = 'campfire:sidebar-projects';
+
+	onMount(() => {
+		projectsOpen = localStorage.getItem(storageKey) !== 'closed';
+	});
+
+	function toggleProjects() {
+		projectsOpen = !projectsOpen;
+		localStorage.setItem(storageKey, projectsOpen ? 'open' : 'closed');
+	}
 
 	const projects = $derived(
 		data.sidebarProjects ? [...data.sidebarProjects.favorites, ...data.sidebarProjects.joined] : []
@@ -72,7 +84,7 @@
 				class="section-head"
 				aria-expanded={projectsOpen}
 				aria-controls="{ids}-projects"
-				onclick={() => (projectsOpen = !projectsOpen)}
+				onclick={toggleProjects}
 			>
 				<span class="chevron" aria-hidden="true"><Icon name="chevron-right" size={24} /></span>
 				{shell.projects}
@@ -217,6 +229,11 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
+	}
+
+	/* `display: grid` beats the browser's `[hidden] { display: none }`. */
+	.rows[hidden] {
+		display: none;
 	}
 
 	/* 44px rows: a 24px mark, the name at 16px in the tertiary grey. */

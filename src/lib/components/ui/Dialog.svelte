@@ -152,6 +152,16 @@
 		--dialog-w: 48rem;
 	}
 
+	/* On a phone the composer follows what's visible above the keyboard, as Campsite's does
+	   (Dialog.tsx, visualViewport): it starts below the visible top and is no taller than the
+	   visible height less a margin. */
+	@media (max-width: 39.99rem) {
+		.dialog[data-size='2xl'] {
+			inset-block-start: calc(var(--visual-top) + 10vh);
+			max-block-size: min(calc(100dvh - 20vh), calc(var(--visual-h) - 12vh));
+		}
+	}
+
 	.dialog[data-fill] {
 		inset-block-start: 4dvh;
 		block-size: calc(100dvh - 8dvh);
