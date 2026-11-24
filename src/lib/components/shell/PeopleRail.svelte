@@ -1,7 +1,7 @@
 <!--
 @component
 The people beside Home, after Campsite's: a 56px search field, then the team and the guests as
-groups that fold away, 32px faces in 48px rows. Hidden below 1024px. Campfire has no presence
+groups that fold away, 32px faces in 48px rows. Hidden below 1024px. Log Cabin has no presence
 yet, so there's no "online" group: the team comes first, the viewer at its top.
 -->
 <script lang="ts">

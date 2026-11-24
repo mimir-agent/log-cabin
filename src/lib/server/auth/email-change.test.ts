@@ -15,7 +15,7 @@ const hour = 60 * minute;
 
 async function world() {
 	const { DB, sqlite } = fakeD1();
-	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Campfire <campfire@example.com>' } as Env;
+	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Log Cabin <campfire@example.com>' } as Env;
 	await createOrgAndAdmin(env, { orgName: 'Acme', adminName: 'Ada', email: 'ada@example.com' });
 	const ada = sqlite.prepare('SELECT id FROM users').get() as { id: string };
 	sqlite

@@ -20,6 +20,22 @@
 	let { data, form }: PageProps = $props();
 	const s = auth.invites;
 	const bulk = invites.bulk;
+
+	let linkField = $state<HTMLInputElement>();
+	let copied = $state(false);
+
+	/** One click copies the link. If the browser refuses, select it so a long-press or Ctrl+C finishes. */
+	async function copyLink() {
+		try {
+			await navigator.clipboard.writeText(form!.link!);
+		} catch {
+			linkField!.focus();
+			linkField!.setSelectionRange(0, linkField!.value.length);
+			return;
+		}
+		copied = true;
+		setTimeout(() => (copied = false), 2000);
+	}
 </script>
 
 <svelte:head>
@@ -91,7 +107,20 @@
 			{#if form?.link}
 				<SettingsField label={s.linkLabel} hint={s.linkCreated}>
 					{#snippet children({ id, hintId })}
-						<input {id} class="link" readonly value={form?.link} aria-describedby={hintId} />
+						<div class="copy">
+							<input
+								{id}
+								class="link"
+								readonly
+								value={form?.link}
+								aria-describedby={hintId}
+								bind:this={linkField}
+								onfocus={(e) => e.currentTarget.select()}
+							/>
+							<Button type="button" onclick={copyLink} aria-live="polite">
+								{copied ? s.copied : s.copyLink}
+							</Button>
+						</div>
 					{/snippet}
 				</SettingsField>
 			{/if}
@@ -180,7 +209,14 @@
 		line-height: var(--leading-tight);
 	}
 
+	.copy {
+		display: flex;
+		gap: var(--gap-sm);
+	}
+
 	.link {
+		flex: 1;
+		min-inline-size: 0;
 		font-family: var(--ff-mono);
 	}
 </style>

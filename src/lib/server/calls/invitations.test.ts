@@ -18,7 +18,7 @@ const vapid = {
 	VAPID_PUBLIC_KEY:
 		'BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8',
 	VAPID_PRIVATE_KEY: 'yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw',
-	EMAIL_FROM: 'Campfire <campfire@example.com>' as const
+	EMAIL_FROM: 'Log Cabin <campfire@example.com>' as const
 };
 
 /** Ada is in a live call in the place (a public project unless given); Bo and Cy are members, Gus a guest. */

@@ -26,7 +26,7 @@ const mentioning = (id: string) => {
 describe('a thread with mentions of posts', () => {
 	it('resolves every message’s mentions in one lookup, and each reader sees only the titles they may open', async () => {
 		const { env, person, shareProject } = await chatWorld();
-		await env.DB.prepare("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)").run();
+		await env.DB.prepare("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)").run();
 		const ada = await person('Ada', 'member');
 		const bo = await person('Bo', 'member');
 		const cy = await person('Cy', 'member');

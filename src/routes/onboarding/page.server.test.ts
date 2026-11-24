@@ -18,7 +18,7 @@ async function world() {
 	const env = {
 		DB,
 		EMAIL_TRANSPORT: 'log',
-		EMAIL_FROM: 'Campfire <c@example.com>'
+		EMAIL_FROM: 'Log Cabin <c@example.com>'
 	} as unknown as Env;
 	useTestEnv(env);
 	await createOrgAndAdmin(env, { orgName: 'Acme', adminName: 'Ada', email: 'ada@acme.test' });

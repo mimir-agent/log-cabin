@@ -87,7 +87,7 @@ describe('/setup', () => {
 		const env = {
 			DB,
 			EMAIL_TRANSPORT: 'log',
-			EMAIL_FROM: 'Campfire <campfire@example.com>'
+			EMAIL_FROM: 'Log Cabin <campfire@example.com>'
 		} as Env;
 		useTestEnv(env);
 		const { result, cookies } = post(env, valid);

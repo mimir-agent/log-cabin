@@ -431,7 +431,7 @@
 	}
 
 	/* Campsite's empty inbox is its 80px inbox mark in the lightest grey, centred in the
-	   column. Campfire keeps the one line under it, so people can read why the view is empty. */
+	   column. Log Cabin keeps the one line under it, so people can read why the view is empty. */
 	.empty {
 		display: flex;
 		flex: 1;
@@ -538,7 +538,7 @@
 
 	.context {
 		justify-content: space-between;
-		/* Campsite drops read rows to its quaternary grey (2.5:1). Campfire keeps every line of
+		/* Campsite drops read rows to its quaternary grey (2.5:1). Log Cabin keeps every line of
 		   text at 4.5:1 or better, so read rows step down by weight and the missing dot. */
 		color: var(--hue-z0-muted);
 	}

@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { sendEmail } from './index';
+import { EmailRejected, sendEmail, sendEmailOnce } from './index';
 import { signInMail } from './templates';
 
 // Enough of D1 for drizzle, over an in-memory SQLite with the real migration applied.
@@ -28,7 +28,7 @@ const message = {
 	text: 'Plain body',
 	html: '<p>Body</p>'
 };
-const from = 'Campfire <campfire@example.com>';
+const from = 'Log Cabin <campfire@example.com>';
 
 function envWith(overrides: Record<string, unknown>): Env {
 	return { EMAIL_FROM: from, ...overrides } as unknown as Env;
@@ -149,10 +149,103 @@ describe('sendEmail', () => {
 		expect(fetch).not.toHaveBeenCalled();
 	});
 
-	it('sends through the EMAIL binding when EMAIL_TRANSPORT is cloudflare', async () => {
-		const send = vi.fn(async () => ({ messageId: 'm1' }));
-		await sendEmail(envWith({ EMAIL_TRANSPORT: 'cloudflare', EMAIL: { send } }), message);
-		expect(send).toHaveBeenCalledWith({ from, ...message });
+	describe('through the EMAIL binding, when EMAIL_TRANSPORT is cloudflare', () => {
+		const binding = () => ({
+			send: vi.fn<(message: unknown) => Promise<{ messageId: string }>>(async () => ({
+				messageId: 'm1'
+			}))
+		});
+		const cloudflare = (EMAIL: ReturnType<typeof binding>, overrides = {}) =>
+			envWith({ EMAIL_TRANSPORT: 'cloudflare', EMAIL, ...overrides });
+
+		it('sends the parts with the sender split into name and address', async () => {
+			const EMAIL = binding();
+			await sendEmail(cloudflare(EMAIL), message);
+			expect(EMAIL.send.mock.calls).toEqual([
+				[
+					{
+						from: { name: 'Log Cabin', email: 'campfire@example.com' },
+						to: message.to,
+						subject: message.subject,
+						html: message.html,
+						text: message.text
+					}
+				]
+			]);
+		});
+
+		it('sends a sender with no name as the plain address', async () => {
+			const EMAIL = binding();
+			await sendEmail(cloudflare(EMAIL, { EMAIL_FROM: 'campfire@example.com' }), message);
+			expect(EMAIL.send.mock.calls[0][0]).toMatchObject({ from: 'campfire@example.com' });
+		});
+
+		it('adds Reply-To when EMAIL_REPLY_TO is set, and none when it is not', async () => {
+			const withReply = binding();
+			await sendEmail(cloudflare(withReply, { EMAIL_REPLY_TO: 'help@example.com' }), message);
+			expect(withReply.send.mock.calls[0][0]).toMatchObject({ replyTo: 'help@example.com' });
+
+			const without = binding();
+			await sendEmail(cloudflare(without), message);
+			expect(without.send.mock.calls[0][0]).not.toHaveProperty('replyTo');
+		});
+
+		it('passes the message’s headers on, and none when it has none', async () => {
+			const EMAIL = binding();
+			const headers = { 'List-Unsubscribe': '<https://campfire.test/settings/notifications>' };
+			await sendEmail(cloudflare(EMAIL), { ...message, headers });
+			expect(EMAIL.send.mock.calls[0][0]).toMatchObject({ headers });
+
+			await sendEmail(cloudflare(EMAIL), message);
+			expect(EMAIL.send.mock.calls[1][0]).not.toHaveProperty('headers');
+		});
+
+		const refusedWith = (code: string) =>
+			cloudflare({
+				send: vi.fn(async () => {
+					throw Object.assign(new Error(`${code} from Cloudflare`), { code });
+				})
+			});
+
+		it.each([
+			'E_RECIPIENT_SUPPRESSED',
+			'E_RECIPIENT_NOT_ALLOWED',
+			'E_VALIDATION_ERROR',
+			'E_SENDER_NOT_VERIFIED',
+			'E_SENDER_DOMAIN_NOT_AVAILABLE',
+			'E_HEADER_VALUE_INVALID',
+			'E_HEADERS_TOO_LARGE'
+		])('throws EmailRejected, which is never retried, for %s', async (code) => {
+			const error = await sendEmail(refusedWith(code), message).catch((e: unknown) => e);
+			expect(error).toBeInstanceOf(EmailRejected);
+			expect(error).toMatchObject({ code });
+			expect((error as Error).message).toContain(`${code} from Cloudflare`);
+		});
+
+		it.each([
+			'E_RATE_LIMIT_EXCEEDED',
+			'E_DAILY_LIMIT_EXCEEDED',
+			'E_INTERNAL_SERVER_ERROR',
+			'E_DELIVERY_FAILED'
+		])('throws %s as it came, for the retry to send again', async (code) => {
+			const error = await sendEmail(refusedWith(code), message).catch((e: unknown) => e);
+			expect(error).not.toBeInstanceOf(EmailRejected);
+			expect(error).toMatchObject({ code });
+		});
+
+		it('sendEmailOnce logs a rejection and returns, and throws what can be retried', async () => {
+			const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+			await sendEmailOnce(refusedWith('E_RECIPIENT_SUPPRESSED'), message);
+			expect(error).toHaveBeenCalledWith(
+				expect.stringContaining(`to ${message.to}`),
+				expect.any(EmailRejected)
+			);
+			error.mockRestore();
+
+			await expect(sendEmailOnce(refusedWith('E_RATE_LIMIT_EXCEEDED'), message)).rejects.toThrow(
+				'E_RATE_LIMIT_EXCEEDED from Cloudflare'
+			);
+		});
 	});
 
 	it('throws when EMAIL_TRANSPORT is cloudflare and the EMAIL binding is missing', async () => {

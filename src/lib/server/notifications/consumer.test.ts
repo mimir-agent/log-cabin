@@ -285,7 +285,7 @@ describe('the JOBS consumer turns events into notifications', () => {
 		}
 	});
 
-	it('notifies the members and favouriters of a project about a new post in it', async () => {
+	it('notifies a project’s subscribers once about a new post in it, and no one else', async () => {
 		const w = notificationWorld();
 		w.person('ada');
 		w.person('bo');
@@ -297,8 +297,23 @@ describe('the JOBS consumer turns events into notifications', () => {
 		expect(w.notificationsFor('bo')).toEqual([
 			{ kind: 'post', actor_id: 'ada', item_key: 'post:p1', url: '/posts/p1' }
 		]);
-		expect(w.notificationsFor('cy')).toHaveLength(1);
+		expect(w.notificationsFor('cy'), 'cy favourited the project without subscribing').toEqual([]);
 		expect(w.notificationsFor('di'), 'di neither joined nor favourited the project').toEqual([]);
+	});
+
+	it('does not notify a subscriber who was asked for feedback on the post', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		w.person('cy');
+		w.project('pr', 'ada', { members: ['ada', 'bo', 'cy'] });
+		w.post('p1', 'pr', 'ada');
+		w.sqlite.exec(
+			"INSERT INTO post_feedback_requests (id, post_id, user_id, requested_by, created_at) VALUES ('f1', 'p1', 'bo', 'ada', 0)"
+		);
+		await deliver(w.env, { kind: 'post.created', postId: 'p1', projectId: 'pr', authorId: 'ada' });
+		expect(w.notificationsFor('bo')).toEqual([]);
+		expect(w.notificationsFor('cy')).toHaveLength(1);
 	});
 
 	it('notifies the people a note is shared with', async () => {

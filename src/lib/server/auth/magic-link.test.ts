@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fakeD1 } from '../testing/fake-d1';
 import { createOrgAndAdmin } from '../setup';
 import { consumeSignInToken, requestSignInLink, takeAttempt } from './magic-link';
@@ -8,7 +8,7 @@ const minute = 60 * 1000;
 
 async function orgWithAdmin() {
 	const { DB, sqlite } = fakeD1();
-	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Campfire <campfire@example.com>' } as Env;
+	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Log Cabin <campfire@example.com>' } as Env;
 	await createOrgAndAdmin(env, { orgName: 'Acme', adminName: 'Ada', email: 'ada@example.com' });
 	const mails = () =>
 		sqlite.prepare('SELECT to_address, subject, text_body FROM dev_mail').all() as {
@@ -132,5 +132,20 @@ describe('takeAttempt', () => {
 		);
 		expect(results.filter(Boolean).length, 'attempts allowed').toBe(5);
 		expect(attempts(sqlite, 'burst'), 'attempts recorded').toBe(5);
+	});
+});
+
+describe('sign-in mail through Cloudflare', () => {
+	it('carries no List-Unsubscribe or other custom headers', async () => {
+		const { env } = await orgWithAdmin();
+		const send = vi.fn<(message: unknown) => Promise<{ messageId: string }>>(async () => ({
+			messageId: 'm1'
+		}));
+		Object.assign(env, { EMAIL_TRANSPORT: 'cloudflare', EMAIL: { send } });
+
+		await requestSignInLink(env, request('ada@example.com'), Date.now());
+
+		expect(send).toHaveBeenCalledOnce();
+		expect(send.mock.calls[0][0]).not.toHaveProperty('headers');
 	});
 });

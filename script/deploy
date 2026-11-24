@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Provision and deploy Campfire to Cloudflare. Safe to re-run: it creates only what is missing.
+# Provision and deploy Log Cabin to Cloudflare. Safe to re-run: it creates only what is missing.
 #
 #   script/deploy                 production (names from the top of wrangler.jsonc)
 #   script/deploy --env beta      the beta deployment, on its own address (names from env.beta)

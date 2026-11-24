@@ -332,7 +332,7 @@ describe('the admin’s off switch', () => {
 	async function turnOff(w: Awaited<ReturnType<typeof calcomWorld>>) {
 		const url = new URL(`${origin}/settings/org`);
 		const form = new FormData();
-		form.set('name', 'Campfire');
+		form.set('name', 'Log Cabin');
 		form.set('domainJoin', 'off');
 		await orgActions.default({
 			request: new Request(url, { method: 'POST', body: form }),

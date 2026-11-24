@@ -178,7 +178,7 @@ wrangler('d1', 'migrations', 'apply', 'campfire');
 const now = Date.now();
 const everyone = Object.values(people);
 const sql = [
-	insert('org', 'id, name, created_at', [[1, 'Campfire', now]]),
+	insert('org', 'id, name, created_at', [[1, 'Log Cabin', now]]),
 	insert(
 		'users',
 		'id, email, name, username, created_at',

@@ -16,7 +16,7 @@ export type Published = { topic: string; payload: unknown };
  */
 export function notificationWorld(vars: Partial<Env> = {}) {
 	const { DB, sqlite } = fakeD1();
-	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	const published: Published[] = [];
 	const jobs: JobMessage[] = [];
 	const REALTIME = {
@@ -30,7 +30,7 @@ export function notificationWorld(vars: Partial<Env> = {}) {
 	};
 	const env = {
 		EMAIL_TRANSPORT: 'log',
-		EMAIL_FROM: 'Campfire <campfire@example.com>',
+		EMAIL_FROM: 'Log Cabin <campfire@example.com>',
 		APP_URL: 'https://campfire.test',
 		JOBS: { send: async (message: JobMessage) => void jobs.push(message) },
 		...vars,

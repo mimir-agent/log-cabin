@@ -42,7 +42,7 @@ function quotingFirst(author: string, kind: string, text: string) {
 
 async function world(options: { ai?: 'answers' | 'fails' | 'absent' } = {}) {
 	const { DB, sqlite } = fakeD1();
-	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	const calls: ModelCall[] = [];
 	const AI = {
 		run: async (model: string, input: { messages: ModelCall['messages'] }) => {
@@ -222,7 +222,7 @@ describe('AI summaries', () => {
 		expect(await summariesShownTo(w.ada, w.postId)).toBe('on');
 
 		const settings = event(admin, '/settings/org', '', {
-			name: 'Campfire',
+			name: 'Log Cabin',
 			domain: '',
 			domainJoin: 'off'
 		});

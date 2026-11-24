@@ -28,7 +28,7 @@ function doc(text: string) {
 
 async function world() {
 	const { DB, sqlite } = fakeD1();
-	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	/** What each hub was asked, and how a note's hub answers a comment's mark. */
 	const hubCalls: { hub: string; path: string; body: Record<string, unknown> }[] = [];
 	const hubAnswers = { mark: () => Response.json({ marked: true }) };

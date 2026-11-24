@@ -53,14 +53,14 @@ Cloudflare's Deploy to Cloudflare button isn't set up for this repository yet, s
 
 Set the `EMAIL_TRANSPORT` variable in `wrangler.jsonc` to choose how Log Cabin sends mail:
 
-| Value        | Sends with                                                                 | Needs                                                                                    |
-| ------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `log`        | Nothing. Writes each message to the `dev_mail` table. This is the default. | Nothing                                                                                  |
-| `cloudflare` | Cloudflare Email Routing, through the `EMAIL` send_email binding           | Email Routing on your zone, and the `send_email` binding uncommented in `wrangler.jsonc` |
-| `resend`     | Resend                                                                     | The `RESEND_API_KEY` secret                                                              |
-| `postmark`   | Postmark                                                                   | The `POSTMARK_TOKEN` secret                                                              |
+| Value        | Sends with                                                                 | Needs                                                                                             |
+| ------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `log`        | Nothing. Writes each message to the `dev_mail` table. This is the default. | Nothing                                                                                           |
+| `cloudflare` | Cloudflare Email Sending, through the `EMAIL` send_email binding           | A domain onboarded to Email Sending, and the `send_email` binding uncommented in `wrangler.jsonc` |
+| `resend`     | Resend                                                                     | The `RESEND_API_KEY` secret                                                                       |
+| `postmark`   | Postmark                                                                   | The `POSTMARK_TOKEN` secret                                                                       |
 
-`EMAIL_FROM` sets the sender address.
+`EMAIL_FROM` sets the sender address. With `cloudflare`, `EMAIL_REPLY_TO` optionally sets a Reply-To address.
 
 To send with Resend, add and verify your domain in Resend, then create an API key there and set it as the `RESEND_API_KEY` secret. Set `EMAIL_TRANSPORT` to `resend` and `EMAIL_FROM` to an address at the domain you verified.
 

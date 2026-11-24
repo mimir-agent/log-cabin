@@ -9,7 +9,7 @@ exports[`unread notification emails > emails a mention or message still unread a
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5e5e5;border-radius:12px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;color:#171717;">
 <tr><td style="padding:24px 24px 8px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Campfire</td></tr>
+<tr><td style="padding:0 0 20px;font-size:14px;line-height:20px;font-weight:600;">Log Cabin</td></tr>
 <tr><td style="padding:0 0 16px;font-size:15px;line-height:22px;">Still unread in your inbox:</td></tr>
 <tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 0;border-top:1px solid #e5e5e5;"><a href="https://campfire.test/posts/p1" style="color:#171717;text-decoration:none;"><span style="display:block;font-size:14px;line-height:20px;font-weight:600;">ada mentioned you</span></a></td></tr><tr><td style="padding:10px 0;border-top:1px solid #e5e5e5;"><a href="https://campfire.test/posts/p1" style="color:#171717;text-decoration:none;"><span style="display:block;font-size:14px;line-height:20px;font-weight:600;">ada sent you a message</span></a></td></tr></table></td></tr>
 <tr><td style="padding:0 0 16px;"><a href="https://campfire.test/inbox" style="display:inline-block;padding:9px 16px;border-radius:8px;background-color:#262626;color:#fcfcfc;font-size:14px;font-weight:600;text-decoration:none;">Open your inbox</a></td></tr>
@@ -23,7 +23,7 @@ exports[`unread notification emails > emails a mention or message still unread a
 `;
 
 exports[`unread notification emails > emails a mention or message still unread after 10 minutes, once > text 1`] = `
-"Campfire
+"Log Cabin
 
 Still unread in your inbox:
 

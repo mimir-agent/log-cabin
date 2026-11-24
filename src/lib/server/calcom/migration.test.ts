@@ -28,7 +28,7 @@ async function before0014() {
 	const old = await sealedByTheApp();
 	const { DB, sqlite } = fakeD1({ until: '0014' });
 	sqlite.exec(`
-		INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0);
+		INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0);
 		INSERT INTO users (id, email, name, created_at) VALUES
 			('u-ada', 'ada@example.com', 'Ada', 0),
 			('u-bo', 'bo@example.com', 'Bo', 0),

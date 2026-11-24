@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { db, schema } from '../db';
-import { sendEmail } from '../email';
+import { sendEmailOnce } from '../email';
 import { renderEmail } from '../email/layout';
 import { getOrg } from '../org';
 import { notifications as strings } from '../../strings/notifications';
@@ -17,6 +17,11 @@ export function appUrl(env: Env): string {
 		);
 	}
 	return env.APP_URL.replace(/\/$/, '');
+}
+
+/** Notification mail points its List-Unsubscribe at the settings page: there is no one-click endpoint. */
+export function unsubscribeHeaders(env: Env): Record<string, string> {
+	return { 'List-Unsubscribe': `<${appUrl(env)}/settings/notifications>` };
 }
 
 // The actor's name, as a subquery, so a query can also join users for the recipient.
@@ -91,8 +96,9 @@ export async function emailUnread(env: Env, now: number): Promise<void> {
 		const quiet = await quietNow(env, userId, now);
 		const wanted = quiet ? [] : rows.filter((row) => settings.emailKinds.includes(row.kind));
 		if (wanted.length) {
-			await sendEmail(env, {
+			await sendEmailOnce(env, {
 				to: rows[0].email,
+				headers: unsubscribeHeaders(env),
 				...(await notificationsEmail(
 					env,
 					strings.email.unreadSubject(wanted.length),

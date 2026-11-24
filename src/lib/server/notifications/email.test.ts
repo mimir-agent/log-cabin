@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { runCron } from '../jobs';
 import { notificationWorld } from './testing/world';
 
@@ -96,5 +96,55 @@ describe('unread notification emails', () => {
 		expect(sent.text_body, 'the post comment').toContain(
 			'- ada commented on a thread you follow\n'
 		);
+	});
+});
+
+describe('unread notification emails through Cloudflare', () => {
+	const now = Date.UTC(2026, 10, 18, 12, 0);
+
+	/** Bo has one old unread mention; the EMAIL binding is `send`. */
+	function cloudflareWorld(send: (message: unknown) => Promise<unknown>) {
+		const w = notificationWorld();
+		Object.assign(w.env, { EMAIL_TRANSPORT: 'cloudflare', EMAIL: { send } });
+		w.person('ada');
+		w.person('bo');
+		notification(w, 'n1', 'bo', 'mention', now - 11 * minute);
+		return w;
+	}
+	const emailedAt = (w: ReturnType<typeof notificationWorld>) =>
+		w.sqlite.prepare('SELECT emailed_at FROM notifications').all();
+	const refusedWith = (code: string) => async () => {
+		throw Object.assign(new Error(code), { code });
+	};
+
+	it('carries a List-Unsubscribe header pointing at the notification settings', async () => {
+		const send = vi.fn(async () => ({ messageId: 'm1' }));
+		await cron(cloudflareWorld(send).env, '*/5 * * * *', now);
+		expect(send).toHaveBeenCalledWith(
+			expect.objectContaining({
+				to: 'bo@example.com',
+				headers: { 'List-Unsubscribe': '<https://campfire.test/settings/notifications>' }
+			})
+		);
+	});
+
+	it('gives up on a recipient Cloudflare refuses for good, so it is not tried every 5 minutes', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const send = vi.fn(refusedWith('E_RECIPIENT_SUPPRESSED'));
+		const w = cloudflareWorld(send);
+		await cron(w.env, '*/5 * * * *', now);
+		await cron(w.env, '*/5 * * * *', now + 5 * minute);
+		expect(send).toHaveBeenCalledTimes(1);
+		expect(emailedAt(w)).toEqual([{ emailed_at: now }]);
+		vi.restoreAllMocks();
+	});
+
+	it('leaves a notification unsent when Cloudflare is only busy, and tries again at the next run', async () => {
+		const send = vi.fn(refusedWith('E_RATE_LIMIT_EXCEEDED'));
+		const w = cloudflareWorld(send);
+		await expect(cron(w.env, '*/5 * * * *', now)).rejects.toThrow('E_RATE_LIMIT_EXCEEDED');
+		expect(emailedAt(w)).toEqual([{ emailed_at: null }]);
+		await expect(cron(w.env, '*/5 * * * *', now + 5 * minute)).rejects.toThrow();
+		expect(send).toHaveBeenCalledTimes(2);
 	});
 });

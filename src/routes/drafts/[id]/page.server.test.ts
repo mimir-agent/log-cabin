@@ -22,7 +22,7 @@ const doc = (text: string) =>
 
 async function world() {
 	const { DB, sqlite } = fakeD1();
-	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	const env = {
 		DB,
 		JOBS: { send: async () => {} },

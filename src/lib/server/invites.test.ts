@@ -22,7 +22,7 @@ const day = 24 * 60 * 60 * 1000;
 
 async function orgWithAdmin() {
 	const { DB, sqlite } = fakeD1();
-	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Campfire <campfire@example.com>' } as Env;
+	const env = { DB, EMAIL_TRANSPORT: 'log', EMAIL_FROM: 'Log Cabin <campfire@example.com>' } as Env;
 	await createOrgAndAdmin(env, { orgName: 'Acme', adminName: 'Ada', email: 'ada@example.com' });
 	const [admin] = await listMembers(env, { query: '', includeDeactivated: false });
 	const ada: SignedIn = {
@@ -393,5 +393,20 @@ describe('starter projects', () => {
 
 		const gus = signedIn(await memberNamed(env, 'Gus'));
 		expect((await listProjects(env, gus, false)).map((p) => p.name)).toEqual(['Design']);
+	});
+});
+
+describe('invite mail through Cloudflare', () => {
+	it('carries no List-Unsubscribe or other custom headers', async () => {
+		const { env, invite } = await orgWithAdmin();
+		const send = vi.fn<(message: unknown) => Promise<{ messageId: string }>>(async () => ({
+			messageId: 'm1'
+		}));
+		Object.assign(env, { EMAIL_TRANSPORT: 'cloudflare', EMAIL: { send } });
+
+		await invite('sam@example.com', 'member');
+
+		expect(send).toHaveBeenCalledOnce();
+		expect(send.mock.calls[0][0]).not.toHaveProperty('headers');
 	});
 });

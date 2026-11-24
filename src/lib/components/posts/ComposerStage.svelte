@@ -1,7 +1,7 @@
 <!--
 @component
 The page a post composer sits on. Campsite's composer is a dialog a tenth of the way down over a
-quiet page; Campfire's is a page styled as that dialog. On a phone the form and its card fill the
+quiet page; Log Cabin's is a page styled as that dialog. On a phone the form and its card fill the
 screen, as Campsite's does.
 -->
 <script lang="ts">

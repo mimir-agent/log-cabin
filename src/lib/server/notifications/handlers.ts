@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { db, schema } from '../db';
 import { canSeeProject } from '../posts/access';
@@ -373,10 +373,22 @@ export const notificationHandlers: Handlers = {
 	async 'post.created'(env, event) {
 		const post = await loadPost(env, event.postId);
 		if (!post) return;
+		// Anyone asked for feedback on this post hears of that instead (feedback.requested).
+		const { postFeedbackRequests: requests, projectSubscriptions: subscriptions } = schema;
+		const asked = db(env)
+			.select({ userId: requests.userId })
+			.from(requests)
+			.where(eq(requests.postId, event.postId));
+		const subscribers = await db(env)
+			.select({ userId: subscriptions.userId })
+			.from(subscriptions)
+			.where(
+				and(eq(subscriptions.projectId, event.projectId), notInArray(subscriptions.userId, asked))
+			);
 		const visible = await whoCanSeeProject(
 			env,
 			event.projectId,
-			await projectFollowers(env, event.projectId)
+			subscribers.map((row) => row.userId)
 		);
 		await notify(env, visible, {
 			actorId: event.authorId,

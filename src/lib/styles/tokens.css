@@ -1,6 +1,6 @@
 /*
- * Campfire's tokens. They sit in the `token` layer, after suede-css, and give suede's semantic
- * tokens Campfire's values, or add the roles suede has no name for.
+ * Log Cabin's tokens. They sit in the `token` layer, after suede-css, and give suede's semantic
+ * tokens Log Cabin's values, or add the roles suede has no name for.
  *
  * The values follow Campsite's design (packages/ui/tailwind.config.js and global.css in
  * Campsite, CC BY-NC 4.0; see docs/design/campsite-reference/specs/primitives.md): neutral
@@ -70,7 +70,7 @@
 		--hue-selected: light-dark(var(--hue-gray-150), var(--hue-gray-750));
 		--hue-fill: light-dark(rgb(0 0 0 / 0.06), rgb(255 255 255 / 0.08)); /* flat buttons, chips */
 
-		/* The primary action is ink: near-black in light mode, near-white in dark. Campfire's
+		/* The primary action is ink: near-black in light mode, near-white in dark. Log Cabin's
 		   colour comes from people and projects, not from the chrome. */
 		--hue-accent: light-dark(var(--hue-gray-800), var(--hue-gray-100));
 		--hue-accent-hover: light-dark(var(--hue-gray-750), var(--hue-white));

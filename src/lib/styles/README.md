@@ -1,11 +1,11 @@
 # Styles
 
-Campfire's design foundation, on top of suede-css. `src/app.css` imports these files in order.
+Log Cabin's design foundation, on top of suede-css. `src/app.css` imports these files in order.
 
 | File                    | What it holds                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------ |
 | `port-to-suede-css.css` | Additions meant for suede-css itself: the `--text-*`, `--gap-*`, `--leading-*` scale |
-| `tokens.css`            | Campfire's colour, elevation, radius, size and motion tokens                         |
+| `tokens.css`            | Log Cabin's colour, elevation, radius, size and motion tokens                        |
 | `type.css`              | Inter, the type roles and app-wide text defaults                                     |
 | `prose.css`             | `.prose`, for post, comment and note bodies and the editor                           |
 | `interaction.css`       | Native fields, keyboard focus, the `data-press` pressed state and reduced motion     |

@@ -167,7 +167,7 @@ describe('weekly summary', () => {
 		await hourly(w.env, friday(16));
 		expect(w.mail('ada').filter((m) => m.subject.includes('weekly'))).toEqual([]);
 		await hourly(w.env, friday(17));
-		const weekly = w.mail('ada').filter((m) => m.subject === 'Campfire weekly summary');
+		const weekly = w.mail('ada').filter((m) => m.subject === 'Log Cabin weekly summary');
 		expect(weekly).toHaveLength(1);
 		expect(weekly[0].text).toContain('ada started the thread “Tent options” in trail');
 		expect(weekly[0].text).toContain(
@@ -194,7 +194,7 @@ describe('weekly summary', () => {
 		await hourly(w.env, friday(17));
 		expect(w.mail('ada')).toEqual([]);
 		await hourly(w.env, wednesday8 + 7 * day);
-		expect(w.mail('ada').map((m) => m.subject)).toEqual(['Campfire weekly summary']);
+		expect(w.mail('ada').map((m) => m.subject)).toEqual(['Log Cabin weekly summary']);
 	});
 });
 
@@ -280,7 +280,7 @@ describe('the day a digest comes', () => {
 			.prepare("UPDATE notification_settings SET weekly_digest_weekday = 6 WHERE user_id = 'ada'")
 			.run();
 		await hourly(w.env, friday(17) + day);
-		const weekly = w.mail('ada').filter((m) => m.subject === 'Campfire weekly summary');
+		const weekly = w.mail('ada').filter((m) => m.subject === 'Log Cabin weekly summary');
 		expect(weekly).toHaveLength(1);
 	});
 
@@ -292,5 +292,27 @@ describe('the day a digest comes', () => {
 		await expect(hourly(w.env, friday(9))).rejects.toThrow(/answered 429/);
 		await hourly(w.env, friday(10));
 		expect(sentTo.sort()).toEqual(['ada@example.com', 'gus@example.com']);
+	});
+});
+
+describe('digests through Cloudflare', () => {
+	it('carry a List-Unsubscribe header pointing at the notification settings', async () => {
+		const w = digestWorld();
+		w.post('p1', 'trail', 'ada', 'Tent options', friday(17) - 3 * hour);
+		const send = vi.fn<(message: unknown) => Promise<{ messageId: string }>>(async () => ({
+			messageId: 'm1'
+		}));
+		Object.assign(w.env, { EMAIL_TRANSPORT: 'cloudflare', EMAIL: { send } });
+
+		await hourly(w.env, friday(17));
+
+		const subjects = send.mock.calls.map(([message]) => (message as { subject: string }).subject);
+		expect(subjects).toContain('1 thread you may have missed');
+		expect(subjects).toContain('Log Cabin weekly summary');
+		for (const [message] of send.mock.calls) {
+			expect(message).toMatchObject({
+				headers: { 'List-Unsubscribe': '<https://campfire.test/settings/notifications>' }
+			});
+		}
 	});
 });

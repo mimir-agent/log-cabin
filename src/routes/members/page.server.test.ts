@@ -22,7 +22,7 @@ async function orgAtDomain(domainJoin: 'off' | 'direct' | 'request') {
 		DB,
 		JOBS: { send: async (job: JobMessage) => void jobs.push(job) },
 		EMAIL_TRANSPORT: 'log',
-		EMAIL_FROM: 'Campfire <campfire@example.com>',
+		EMAIL_FROM: 'Log Cabin <campfire@example.com>',
 		REALTIME: {
 			idFromName: (topic: string) => topic,
 			get: () => ({ fetch: async () => new Response(null, { status: 204 }) })

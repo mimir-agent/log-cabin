@@ -272,6 +272,8 @@ export const auth = {
 		days: (days: number) => (days === 1 ? '1 day' : `${days} days`),
 		createLink: 'Create link',
 		linkCreated: 'Copy this link now. It won’t be shown again.',
+		copyLink: 'Copy link',
+		copied: 'Copied',
 		open: 'Pending invitations',
 		none: 'No pending invitations.',
 		linkLabel: 'Invitation link',

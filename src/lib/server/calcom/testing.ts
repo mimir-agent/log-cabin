@@ -16,7 +16,7 @@ export async function calcomWorld(options: { sessionSecret?: boolean; calls?: bo
 		...(options.sessionSecret === false ? {} : { SESSION_SECRET: 'test-session-secret' }),
 		...(options.calls === false && { REALTIME_APP_ID: undefined, REALTIME_APP_TOKEN: undefined })
 	});
-	w.sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	w.sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	const admin = await w.person('Ada', 'admin');
 	const projectId = await createProject(w.env, admin, {
 		name: 'Bookings',

@@ -11,7 +11,7 @@ const pause = () => new Promise((resolve) => setTimeout(resolve, 5));
 async function unreadDm() {
 	const { env, person } = await chatWorld();
 	// The page's load reads the org's settings.
-	await env.DB.prepare("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)").run();
+	await env.DB.prepare("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)").run();
 	const ada = await person('Ada', 'member');
 	const bo = await person('Bo', 'member');
 	const id = await startDm(env, ada, bo.user.id);

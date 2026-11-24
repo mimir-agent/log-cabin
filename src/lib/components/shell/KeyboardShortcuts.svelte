@@ -1,7 +1,7 @@
 <!-- Adapted from Campsite (https://github.com/campsite/campsite), apps/web/components/GlobalKeyboardShortcuts/index.tsx, commit cc14551, modified. Licensed CC BY-NC 4.0: https://creativecommons.org/licenses/by-nc/4.0/ -->
 <!--
 @component
-Campsite's global keyboard shortcuts, with Campfire's routes, and `?` for a sheet that lists
+Campsite's global keyboard shortcuts, with Log Cabin's routes, and `?` for a sheet that lists
 them. None of them fires while someone types into a field or an editor.
 -->
 

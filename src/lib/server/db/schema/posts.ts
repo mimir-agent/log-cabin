@@ -46,6 +46,21 @@ export const projectFavorites = sqliteTable(
 	(t) => [primaryKey({ columns: [t.projectId, t.userId] })]
 );
 
+/** Who hears about new posts in a project (0041_project_subscriptions.sql; members subscribe on joining). */
+export const projectSubscriptions = sqliteTable(
+	'project_subscriptions',
+	{
+		projectId: text('project_id')
+			.notNull()
+			.references(() => projects.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		createdAt: integer('created_at').notNull()
+	},
+	(t) => [primaryKey({ columns: [t.projectId, t.userId] })]
+);
+
 export const posts = sqliteTable('posts', {
 	id: text('id').primaryKey(),
 	projectId: text('project_id')

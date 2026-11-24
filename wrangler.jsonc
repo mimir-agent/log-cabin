@@ -47,7 +47,9 @@
 	// Optional bindings. Uncomment to use them:
 	// IMAGES needs Cloudflare Images on the account.
 	// "images": { "binding": "IMAGES" },
-	// EMAIL needs Email Routing on a zone you own; then set EMAIL_TRANSPORT to "cloudflare".
+	// EMAIL sends mail through Cloudflare Email Sending from a domain you have onboarded to it; then
+	// set EMAIL_TRANSPORT to "cloudflare", EMAIL_FROM to an address on that domain and, if you want
+	// replies to go somewhere, EMAIL_REPLY_TO. See env.beta.
 	// "send_email": [{ "name": "EMAIL" }],
 	"triggers": {
 		// Every 5 minutes: the job sweeper. Every hour: digests for users whose local hour it is.
@@ -55,13 +57,14 @@
 	},
 	"vars": {
 		"EMAIL_TRANSPORT": "log",
-		"EMAIL_FROM": "Campfire <campfire@example.com>",
+		"EMAIL_FROM": "Log Cabin <campfire@example.com>",
 		"ATTACHMENT_MAX_MB": "25"
 	},
 	"env": {
 		// A separate deployment for a small group of real people. It takes every merge, from the
 		// same build. It has its own database, bucket, queue and secrets, and it is reached only on its own
-		// address: no workers.dev URL. Mail is logged.
+		// address: no workers.dev URL. Mail goes out through Cloudflare Email Sending, from an address
+		// on a domain onboarded to it; send_email is declared here because envs don't inherit bindings.
 		"beta": {
 			"name": "campfire-beta",
 			"workers_dev": false,
@@ -91,10 +94,12 @@
 				{ "tag": "v2-recording-sink", "new_sqlite_classes": ["RecordingSink"] }
 			],
 			"ai": { "binding": "AI" },
+			"send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["cabin@yaaia.id"] }],
 			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
 			"vars": {
-				"EMAIL_TRANSPORT": "log",
+				"EMAIL_TRANSPORT": "cloudflare",
 				"EMAIL_FROM": "Log Cabin <cabin@yaaia.id>",
+				"EMAIL_REPLY_TO": "mir@yaaia.id",
 				"ATTACHMENT_MAX_MB": "25",
 				"APP_URL": "https://cabin.yaaia.id"
 			}
@@ -129,7 +134,7 @@
 			"triggers": { "crons": ["*/5 * * * *", "0 * * * *"] },
 			"vars": {
 				"EMAIL_TRANSPORT": "log",
-				"EMAIL_FROM": "Campfire Test <campfire@example.com>",
+				"EMAIL_FROM": "Log Cabin Test <campfire@example.com>",
 				"ATTACHMENT_MAX_MB": "25",
 				// A Worker can't read its own name; the email module refuses real mail when this is campfire-test.
 				"WORKER_NAME": "campfire-test"

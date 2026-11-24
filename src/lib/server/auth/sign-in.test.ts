@@ -103,7 +103,7 @@ describe('completeSignIn', () => {
 		const env = {
 			DB,
 			EMAIL_TRANSPORT: 'log',
-			EMAIL_FROM: 'Campfire <campfire@example.com>'
+			EMAIL_FROM: 'Log Cabin <campfire@example.com>'
 		} as Env;
 		await createOrgAndAdmin(env, { orgName: 'Acme', adminName: 'Ada', email: 'ada@example.com' });
 		const [admin] = await listMembers(env, { query: '', includeDeactivated: false });

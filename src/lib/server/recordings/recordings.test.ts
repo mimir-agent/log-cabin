@@ -94,7 +94,7 @@ async function recordingWorld() {
 		BUCKET: bucket,
 		RECORDING_SINK
 	} as unknown as Partial<Env>);
-	w.sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
+	w.sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");
 	const ada = await w.person('Ada', 'member');
 	const bo = await w.person('Bo', 'member');
 	const cy = await w.person('Cy', 'member');

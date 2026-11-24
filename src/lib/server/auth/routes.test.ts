@@ -19,7 +19,7 @@ function mailEnv(vars: Partial<Env> = {}) {
 	const env = {
 		DB,
 		EMAIL_TRANSPORT: 'log',
-		EMAIL_FROM: 'Campfire <campfire@example.com>',
+		EMAIL_FROM: 'Log Cabin <campfire@example.com>',
 		...vars
 	} as Env;
 	useTestEnv(env);

@@ -15,13 +15,13 @@ import {
 } from 'drizzle-orm';
 import { db, schema } from '../db';
 import type { Role } from '../db/schema';
-import { sendEmail } from '../email';
+import { sendEmailOnce } from '../email';
 import { renderEmail, type EmailBlock } from '../email/layout';
 import { getOrg } from '../org';
 import { visibleProjectIds } from '../posts/access';
 import { notifications as strings } from '../../strings/notifications';
 import { localClock } from './quiet';
-import { appUrl } from './email';
+import { appUrl, unsubscribeHeaders } from './email';
 import { defaultSettings, type NotificationSettings } from './settings';
 
 const hour = 60 * 60 * 1000;
@@ -238,8 +238,9 @@ async function sendDailyDigest(env: Env, person: Person, now: number, orgName: s
 	const s = strings.digests;
 	const posts = await digestPosts(env, person, now - day, now, { excludeOwnPosts: true });
 	if (posts.length) {
-		await sendEmail(env, {
+		await sendEmailOnce(env, {
 			to: person.email,
+			headers: unsubscribeHeaders(env),
 			...renderEmail(
 				{
 					subject: s.dailySubject(posts.length),
@@ -270,8 +271,9 @@ async function sendWeeklyDigest(env: Env, person: Person, now: number, orgName: 
 				}
 			);
 		}
-		await sendEmail(env, {
+		await sendEmailOnce(env, {
 			to: person.email,
+			headers: unsubscribeHeaders(env),
 			...renderEmail(
 				{ subject: s.weeklySubject(orgName), blocks: [...blocks, footer(env)] },
 				orgName

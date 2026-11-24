@@ -98,7 +98,7 @@ export async function fetchPublicResponse(start: URL, accept: string, signal: Ab
 		try {
 			response = await fetch(url, {
 				redirect: 'manual',
-				headers: { accept, 'user-agent': 'Mozilla/5.0 (compatible; CampfireLinkPreview/1.0)' },
+				headers: { accept, 'user-agent': 'Mozilla/5.0 (compatible; LogCabinLinkPreview/1.0)' },
 				signal
 			});
 		} catch {

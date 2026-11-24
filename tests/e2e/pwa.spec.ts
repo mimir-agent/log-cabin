@@ -32,8 +32,13 @@ test('Chromium finds the app installable, named for the organization', async ({ 
 	// Playwright's contexts are incognito, where Chrome never installs anything.
 	expect(installabilityErrors.filter(({ errorId }) => errorId !== 'in-incognito')).toEqual([]);
 	const manifest = await (await page.request.get('/manifest.webmanifest')).json();
-	// serve.ts names the organization Campfire.
-	expect(manifest).toMatchObject({ name: 'Campfire', display: 'standalone', start_url: '/' });
+	// serve.ts names the organization Log Cabin.
+	expect(manifest).toMatchObject({
+		name: 'Log Cabin',
+		short_name: 'Log Cabin',
+		display: 'standalone',
+		start_url: '/'
+	});
 	await page.context().close();
 });
 
