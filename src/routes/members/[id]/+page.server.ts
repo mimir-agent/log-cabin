@@ -6,10 +6,10 @@ import { auth } from '#lib/strings/auth.js';
 import type { PageServerLoad } from './$types';
 
 // Profiles live at /people/<username>. Links made before usernames, and search results,
-// still name the member id.
+// still name the member id. 302, not 301: a username can change, and a browser keeps a 301 forever.
 export const load: PageServerLoad = async (event) => {
 	requireMember(event, 'viewer');
 	const member = await getMember(getEnv(), event.params.id);
 	if (!member) error(404, auth.profile.errors.notFound);
-	redirect(301, `/people/${member.username}`);
+	redirect(302, `/people/${member.username}`);
 };

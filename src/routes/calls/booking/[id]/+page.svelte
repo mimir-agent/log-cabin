@@ -4,6 +4,7 @@
 	import Button from '#lib/components/ui/Button.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import { calcom } from '#lib/strings/calcom.js';
+	import { calls } from '#lib/strings/calls.js';
 	import { core } from '#lib/strings/core.js';
 	import type { PageProps } from './$types';
 
@@ -28,6 +29,9 @@
 	{:else}
 		{@const lobby = data.lobby}
 		<p class="when">{g.when(lobby.startsAt, lobby.endsAt, data.timeZone)}</p>
+		{#if lobby.recorded && lobby.state === 'open'}
+			<p class="consent" role="status">{calls.recording.consent}</p>
+		{/if}
 		{#if lobby.state !== 'open'}
 			<p class="note" role="status">{g.closed[lobby.state]}</p>
 		{:else if lobby.guests.length === 0}
@@ -89,7 +93,8 @@
 		color: var(--hue-call);
 	}
 
-	.when {
+	.when,
+	.consent {
 		margin: 0;
 		font-size: 0.9375rem;
 		font-weight: var(--fw-medium);

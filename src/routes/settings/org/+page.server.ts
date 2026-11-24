@@ -6,6 +6,7 @@ import { aiConfigured } from '#lib/server/ai/summaries.js';
 import { calcomAvailable } from '#lib/server/calcom/calcom.js';
 import { getOrg, parseDomainSetting, updateOrg } from '#lib/server/org.js';
 import { getObjectUrl, saveImage } from '#lib/server/storage.js';
+import { callRecordingModes } from '#lib/server/db/schema/index.js';
 import { auth } from '#lib/strings/auth.js';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -23,6 +24,7 @@ export const load: PageServerLoad = async (event) => {
 			calcomEnabled: org.calcomEnabled,
 			publicPosts: org.publicPosts,
 			publicPostsIndexable: org.publicPostsIndexable,
+			callRecording: org.callRecording,
 			logoUrl: org.logoKey ? getObjectUrl(org.logoKey) : null
 		},
 		googleConfigured: googleConfigured(env),
@@ -41,9 +43,16 @@ export const actions: Actions = {
 		if (!name) return fail(400, { message: errors.nameMissing });
 		const domain = parseDomainSetting(form);
 		if (!domain.ok) return fail(400, { message: domain.message });
+		const callRecording = callRecordingModes.find((mode) => mode === form.get('callRecording'));
+		if (!callRecording) {
+			throw new Error(
+				`org settings: expected callRecording to be one of ${callRecordingModes.join(', ')}, got ${String(form.get('callRecording'))}`
+			);
+		}
 		const changes = {
 			name,
 			...domain.changes,
+			callRecording,
 			googleSignIn: form.get('google') === 'on',
 			aiEnabled: form.get('ai') === 'on',
 			publicPosts: form.get('publicPosts') === 'on',

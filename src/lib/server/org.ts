@@ -27,6 +27,7 @@ export async function updateOrg(
 			| 'publicPosts'
 			| 'publicPostsIndexable'
 			| 'customEmojiBy'
+			| 'callRecording'
 		>
 	>
 ): Promise<void> {

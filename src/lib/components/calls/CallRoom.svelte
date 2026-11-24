@@ -34,6 +34,7 @@
 		ended,
 		autoJoin = false,
 		canShare = true,
+		recorded = false,
 		refresh,
 		connection = $bindable(null),
 		extras,
@@ -50,6 +51,8 @@
 		autoJoin?: boolean;
 		/** Whether this person may share their screen. */
 		canShare?: boolean;
+		/** Whether the call is being recorded: said before joining, where consent is given. */
+		recorded?: boolean;
 		/** Asks the page for a fresh list of people, after a change made here. */
 		refresh: () => Promise<unknown>;
 		connection?: CallConnection | null;
@@ -365,6 +368,7 @@
 		{/if}
 		{#if intro && !ended}<p class="intro">{@render intro()}</p>{/if}
 		<p class="note" role={ended ? 'status' : undefined}>{ended ? s.ended : s.ready}</p>
+		{#if recorded && !ended}<p class="consent" role="status">{calls.recording.consent}</p>{/if}
 		{#if !ended}
 			<div class="actions">
 				<Button variant="primary" onclick={join} disabled={joining}>
@@ -428,6 +432,12 @@
 		color: var(--hue-z0-muted);
 		font-size: var(--type-body);
 		text-wrap: balance;
+	}
+
+	.consent {
+		margin: 0;
+		font-size: var(--type-body);
+		font-weight: var(--fw-medium);
 	}
 
 	.actions {

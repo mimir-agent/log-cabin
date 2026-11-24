@@ -16,7 +16,8 @@ function event(who: SignedIn, id: string) {
 
 describe('/calls/<id>', () => {
 	it('says when a call that is over started, how long it lasted and who was in it', async () => {
-		const { env, person } = await callsWorld();
+		const { env, person, sqlite } = await callsWorld();
+		sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
 		const ada = await person('Ada', 'member');
 		const bo = await person('Bo', 'member');
 		const place = { kind: 'room' as const, id: ada.user.id };
@@ -45,7 +46,8 @@ describe('/calls/<id>', () => {
 	});
 
 	it('has no past for a call still going on', async () => {
-		const { env, person } = await callsWorld();
+		const { env, person, sqlite } = await callsWorld();
+		sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Campfire', 0)");
 		const ada = await person('Ada', 'member');
 		const id = await startCall(env, ada, { kind: 'room', id: ada.user.id });
 

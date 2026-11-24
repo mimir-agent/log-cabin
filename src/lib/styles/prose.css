@@ -30,13 +30,28 @@
 
 	/* The reading line, in the editor and as read. A surface opts in with its data-size; a
 	   comment, which reads at the post's size without being long-form, and chat keep their
-	   column. A note holds the long-form line, a post the shorter one a message reads on. */
-	.prose[data-size='note'] {
-		max-inline-size: var(--measure-prose);
-	}
-
+	   column. A post holds the line a message reads on. */
 	.prose[data-size='post'] {
 		max-inline-size: var(--measure-post);
+	}
+
+	/* A doc is a page inside its own container (the doc article). Its line is on this block,
+	   never on a child, so a heading's larger font can't change it. Images, galleries and code
+	   take the page's width, centred on the line; a post keeps them in its column. */
+	.prose[data-size='note'] {
+		inline-size: 100%;
+		max-inline-size: var(--measure-doc);
+		margin-inline: auto;
+	}
+
+	.prose[data-size='note'] > :is(img:not(.gallery-tile), pre, .image, .gallery) {
+		inline-size: min(var(--page-doc), 100cqw);
+		max-inline-size: none;
+		margin-inline: calc((100% - min(var(--page-doc), 100cqw)) / 2);
+	}
+
+	.prose[data-size='note'] > .image img {
+		inline-size: 100%;
 	}
 
 	.prose > * {

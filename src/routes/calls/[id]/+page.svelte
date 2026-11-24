@@ -160,6 +160,7 @@
 			{title}
 			{people}
 			ended={data.call.ended}
+			recorded={!!data.recording.active}
 			autoJoin={page.url.searchParams.has('join')}
 			refresh={() => invalidate('call:room')}
 			bind:connection

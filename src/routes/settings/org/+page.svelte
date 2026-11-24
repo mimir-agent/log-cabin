@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import ImagePicker from '#lib/components/settings/ImagePicker.svelte';
 	import DomainSetting from '#lib/components/invites/DomainSetting.svelte';
@@ -8,10 +9,12 @@
 	import SettingsSection from '#lib/components/settings/SettingsSection.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Switch from '#lib/components/ui/Switch.svelte';
+	import SegmentedControl from '#lib/components/ui/SegmentedControl.svelte';
 	import { orgTabs } from '#lib/settings-nav.js';
 	import { auth } from '#lib/strings/auth.js';
 	import { ai } from '#lib/strings/ai.js';
 	import { calcom } from '#lib/strings/calcom.js';
+	import { calls } from '#lib/strings/calls.js';
 	import { core } from '#lib/strings/core.js';
 	import { posts } from '#lib/strings/posts.js';
 	import type { PageProps } from './$types';
@@ -19,6 +22,13 @@
 	let { data, form }: PageProps = $props();
 	const s = auth.orgSettings;
 	const publicSettings = posts.publicLink.settings;
+	const rec = calls.recording.setting;
+	// Starts at the saved mode; after that it's the admin's choice until they save.
+	let recordingMode = $state(untrack(() => data.org.callRecording));
+	const recordingModes = (['off', 'ask', 'on'] as const).map((value) => ({
+		value,
+		label: rec.modes[value]
+	}));
 </script>
 
 <svelte:head>
@@ -51,6 +61,12 @@
 			</div>
 			<!-- What the org turns on, one switch a row, each saying what "on" does. -->
 			<div class="switches">
+				<div class="recording">
+					<span class="label">{rec.label}</span>
+					<SegmentedControl label={rec.label} options={recordingModes} bind:value={recordingMode} />
+					<input type="hidden" name="callRecording" value={recordingMode} />
+					<p class="hint">{rec.hints[recordingMode]}</p>
+				</div>
 				<Switch
 					name="google"
 					checked={data.org.googleSignIn}
@@ -119,6 +135,27 @@
 
 	.switches > :global(* + *) {
 		border-block-start: var(--border-w-hairline) solid var(--hue-border-secondary);
+	}
+
+	.recording {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--gap-sm);
+	}
+
+	.label {
+		color: var(--hue-text-secondary);
+		font-size: var(--type-caption);
+		font-weight: var(--fw-medium);
+		line-height: 1rem;
+	}
+
+	.hint {
+		margin: 0;
+		color: var(--hue-z0-muted);
+		font-size: var(--type-body);
+		line-height: var(--leading-tight);
 	}
 
 	@media (min-width: 40rem) {

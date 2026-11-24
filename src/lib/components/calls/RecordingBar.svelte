@@ -3,6 +3,7 @@
 	import { invalidate } from '$app/navigation';
 	import Banner from '#lib/components/ui/Banner.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import { CompositeRecorder } from '#lib/calls/video-recorder.js';
 	import type { RecordingsView } from '#lib/server/recordings/view.js';
 	import { calls } from '#lib/strings/calls.js';
@@ -82,6 +83,15 @@
 		await invalidate('call:room');
 		busy = false;
 	}
+
+	/** The starter's question is asked once per page load; Not now leaves the Record button. */
+	let asking = $state(true);
+	const asked = $derived(asking && view.prompt && view.canRecord && !!stage);
+
+	function answer(yes: boolean) {
+		asking = false;
+		if (yes) record();
+	}
 </script>
 
 {#if view.active && stage}
@@ -90,7 +100,7 @@
 	<div class="pill" role="status" title={video ? s.videoHere : s.banner(view.active.startedByName)}>
 		<span class="dot" aria-hidden="true"></span>
 		{s.pill}
-		{#if view.canRecord}
+		{#if view.canRecord && view.mode !== 'on'}
 			<Button size="sm" onclick={stop} disabled={busy} aria-label={s.stop}>{s.stopShort}</Button>
 		{/if}
 	</div>
@@ -99,16 +109,28 @@
 		{s.banner(view.active.startedByName)}
 		{#if video}<small>{s.videoHere}</small>{/if}
 		{#snippet action()}
-			{#if view.canRecord}
+			{#if view.canRecord && view.mode !== 'on'}
 				<Button size="sm" onclick={stop} disabled={busy}>{s.stop}</Button>
 			{/if}
 		{/snippet}
 	</Banner>
-{:else if view.canRecord && stage}
+{:else if view.canRecord && stage && view.mode === 'ask'}
 	<div>
 		<Button size="sm" onclick={record} disabled={busy}>{busy ? s.starting : s.start}</Button>
 	</div>
 {/if}
+
+<Dialog
+	open={asked}
+	onOpenChange={(open) => !open && (asking = false)}
+	title={s.prompt.title}
+	size="sm"
+>
+	{#snippet actions()}
+		<Button onclick={() => answer(false)}>{s.prompt.no}</Button>
+		<Button variant="primary" onclick={() => answer(true)}>{s.prompt.yes}</Button>
+	{/snippet}
+</Dialog>
 
 <style>
 	/* Breathes slowly, like the banner's dot; reduced motion stops it. */

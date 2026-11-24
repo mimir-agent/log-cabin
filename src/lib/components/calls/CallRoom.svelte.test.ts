@@ -154,3 +154,26 @@ describe('CallRoom, who the speaker watch listens to', () => {
 		expect(watched.at(-1)).toEqual(['me', 'bo']);
 	});
 });
+
+describe('CallRoom, before joining', () => {
+	const props = {
+		callId: 'call',
+		title: 'Call',
+		people: [me],
+		ended: false,
+		refresh: async () => {}
+	};
+
+	it('says the call is recorded, before anyone joins', async () => {
+		render(CallRoom, { ...props, recorded: true });
+
+		await expect.element(page.getByText(calls.recording.consent)).toBeVisible();
+		await expect.element(page.getByRole('button', { name: s.leave })).not.toBeInTheDocument();
+	});
+
+	it('says nothing about recording when the call is not recorded', async () => {
+		render(CallRoom, props);
+
+		await expect.element(page.getByText(calls.recording.consent)).not.toBeInTheDocument();
+	});
+});

@@ -33,6 +33,8 @@
 	<p class="title" aria-hidden="true">{title}</p>
 	{#if recording.summary}<CallSummary
 			summary={recording.summary}
+			canRegenerate={recording.canEditTranscript &&
+				recording.recordings.some((r) => r.lines.some((line) => line.original !== null))}
 			onseek={(lineId) => recordings!.seekToLine(lineId)}
 		/>{/if}
 	<div class="people">

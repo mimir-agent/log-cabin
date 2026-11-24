@@ -170,7 +170,7 @@ export class CallConnection {
 	}
 
 	/** Tells the server this browser is still in the call, and hears who else is. */
-	ping<Person>(): Promise<{ participants: Person[] }> {
+	ping<Person>(): Promise<{ participants: Person[]; recorded: boolean }> {
 		return this.request({ op: 'ping' });
 	}
 

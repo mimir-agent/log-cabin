@@ -11,9 +11,12 @@ import { POST as webhook } from '../../../routes/integrations/calcom/webhook/[id
 
 export const origin = 'https://campfire.test';
 
-export async function calcomWorld(options: { sessionSecret?: boolean; calls?: boolean } = {}) {
+export async function calcomWorld(
+	options: { sessionSecret?: boolean; calls?: boolean; recording?: boolean } = {}
+) {
 	const w = await callsWorld({
 		...(options.sessionSecret === false ? {} : { SESSION_SECRET: 'test-session-secret' }),
+		...(options.recording && ({ AI: {}, APP_URL: origin } as Partial<Env>)),
 		...(options.calls === false && { REALTIME_APP_ID: undefined, REALTIME_APP_TOKEN: undefined })
 	});
 	w.sqlite.exec("INSERT INTO org (id, name, created_at) VALUES (1, 'Log Cabin', 0)");

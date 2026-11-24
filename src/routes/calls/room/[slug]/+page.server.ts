@@ -16,7 +16,7 @@ async function room(event: RequestEvent) {
 	const who = requireMember(event);
 	const owner = await resolveRoomSlug(env, event.params.slug);
 	if (!owner) error(404, strings.errors.roomNotFound);
-	if ('redirectTo' in owner) redirect(301, roomPath({ username: owner.redirectTo }));
+	if ('redirectTo' in owner) redirect(302, roomPath({ username: owner.redirectTo }));
 	const place: CallPlace = { kind: 'room', id: owner.userId };
 	if (!(await canSeePlace(env, who.user.id, who.member, place))) {
 		error(404, strings.errors.roomNotFound);

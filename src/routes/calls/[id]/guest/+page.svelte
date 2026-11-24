@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import CallRoom, { type CallPerson } from '#lib/components/calls/CallRoom.svelte';
+	import Banner from '#lib/components/ui/Banner.svelte';
 	import EmptyState from '#lib/components/shell/EmptyState.svelte';
 	import PageHeader from '#lib/components/shell/PageHeader.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
@@ -17,6 +18,9 @@
 	/** Who's in the call, from the page's load or, once joined, from the last heartbeat. */
 	let heard = $state<CallPerson[] | null>(null);
 	const people = $derived(heard ?? data.call.participants);
+	/** Whether the call is recorded, from the page's load or, once joined, from the last heartbeat. */
+	let heardRecorded = $state<boolean | null>(null);
+	const recorded = $derived(heardRecorded ?? data.recorded);
 	/** The server no longer counts this guest in the call: the pass ran out, or they were gone too long. */
 	let removed = $state(false);
 	/** Why the heartbeat stopped, when the server answered it with something unexpected. The
@@ -30,7 +34,9 @@
 		if (!joined) return;
 		const timer = setInterval(async () => {
 			try {
-				heard = (await joined.ping<CallPerson>()).participants;
+				const beat = await joined.ping<CallPerson>();
+				heard = beat.participants;
+				heardRecorded = beat.recorded;
 			} catch (e) {
 				const next = afterFailedBeat(e);
 				if (next === 'retry') return;
@@ -45,6 +51,7 @@
 
 	async function refresh() {
 		heard = null;
+		heardRecorded = null;
 		await invalidateAll();
 	}
 </script>
@@ -68,10 +75,14 @@
 		{people}
 		ended={data.call.ended}
 		canShare={false}
+		{recorded}
 		{refresh}
 		bind:connection
 		bind:problem
 	>
 		{#snippet intro()}{g.joiningAs(data.name)}{/snippet}
+		{#snippet recording()}
+			{#if recorded}<Banner tone="live">{calls.recording.consent}</Banner>{/if}
+		{/snippet}
 	</CallRoom>
 {/if}

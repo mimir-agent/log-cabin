@@ -1,5 +1,10 @@
+import { error } from '@sveltejs/kit';
+import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core';
 import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '../db';
+import type { SignedIn } from '../auth/session';
+import { canSeePlace, type LoadedCall } from '../calls/calls';
+import { canEditCall } from '../calls/shares';
 import { newId } from '../id';
 import { getOrg } from '../org';
 import { publish } from '../realtime/publish';
@@ -12,7 +17,7 @@ import {
 import { summariesOn } from '../ai/summaries';
 import type { Handlers } from '../notifications/handlers';
 import { calls as strings } from '../../strings/calls';
-import { flushGraceMs } from './recordings';
+import { canRecord, flushGraceMs } from './recordings';
 
 /** Workers AI speech recognition. Its model page lists no input limit; a segment's minute of 16 kHz WAV is about 2.6 MB as base64. */
 export const TRANSCRIBE_MODEL = '@cf/openai/whisper-large-v3-turbo';
@@ -100,6 +105,7 @@ export async function transcriptLines(env: Env, recordingId: string) {
 			startMs: l.startMs,
 			endMs: l.endMs,
 			text: l.text,
+			original: l.originalText,
 			speaker: sql<string>`coalesce(${users.name}, ${guests.name})`
 		})
 		.from(l)
@@ -110,6 +116,76 @@ export async function transcriptLines(env: Env, recordingId: string) {
 		.leftJoin(guests, eq(guests.id, p.guestPassId))
 		.where(eq(l.recordingId, recordingId))
 		.orderBy(asc(l.startMs), asc(l.id));
+}
+
+type EditableCall = Pick<LoadedCall, 'id' | 'startedBy' | 'place'>;
+
+/**
+ * Whether this person may fix the call's transcript: whoever may change the call, or post
+ * where it is. Someone who can't see where it began (they reached it through a share) can't
+ * post there.
+ */
+export async function canEditTranscript(env: Env, who: SignedIn, call: EditableCall) {
+	if (await canEditCall(env, who, call)) return true;
+	return (
+		(await canSeePlace(env, who.user.id, who.member, call.place)) &&
+		(await canRecord(env, who, call.place))
+	);
+}
+
+/** Changes one of a call's transcript lines, keeping its times; 403 for anyone who may not. */
+async function updateLine(
+	env: Env,
+	who: SignedIn,
+	call: EditableCall,
+	lineId: string,
+	set: SQLiteUpdateSetSource<typeof schema.callTranscriptLines>
+) {
+	if (!(await canEditTranscript(env, who, call))) error(403, strings.recording.errors.cannotEdit);
+	const { callTranscriptLines: l, callRecordings: r } = schema;
+	const database = db(env);
+	const updated = await database
+		.update(l)
+		.set(set)
+		.where(
+			and(
+				eq(l.id, lineId),
+				inArray(l.recordingId, database.select({ id: r.id }).from(r).where(eq(r.callId, call.id)))
+			)
+		)
+		.returning({ id: l.id });
+	if (updated.length === 0) error(404, strings.recording.errors.lineNotFound);
+}
+
+/** Fixes what a line says. The first fix keeps the words the model heard. */
+export async function editTranscriptLine(
+	env: Env,
+	who: SignedIn,
+	call: EditableCall,
+	lineId: string,
+	text: string
+) {
+	const fixed = text.trim();
+	if (!fixed) error(400, strings.recording.errors.emptyLine);
+	const l = schema.callTranscriptLines;
+	await updateLine(env, who, call, lineId, {
+		text: fixed,
+		originalText: sql`coalesce(${l.originalText}, ${l.text})`
+	});
+}
+
+/** Puts back what the model heard. A line that was never edited is left as it is. */
+export async function revertTranscriptLine(
+	env: Env,
+	who: SignedIn,
+	call: EditableCall,
+	lineId: string
+) {
+	const l = schema.callTranscriptLines;
+	await updateLine(env, who, call, lineId, {
+		text: sql`coalesce(${l.originalText}, ${l.text})`,
+		originalText: null
+	});
 }
 
 /**
@@ -138,13 +214,14 @@ export async function finishIfTranscribed(env: Env, recordingId: string, now = D
  * Writes a call's title and summary sections from the transcripts of all its recordings, once
  * the call has ended and none of them is still recording or processing, when the org has
  * summaries on. Runs when the call ends, after each recording job, and when the hourly check
- * fails a stuck recording, so whichever comes last writes it.
+ * fails a stuck recording, so whichever comes last writes it. `regenerate` writes it again
+ * from the lines as they are now, after someone fixed some.
  */
-export async function summarizeCallIfDone(env: Env, callId: string) {
+export async function summarizeCallIfDone(env: Env, callId: string, regenerate = false) {
 	const { calls, callRecordings: r } = schema;
 	const call = await db(env).select().from(calls).where(eq(calls.id, callId)).get();
 	if (!call) throw new Error(`summarizeCallIfDone: no call ${callId}`);
-	if (call.endedAt === null || call.summary !== null) return;
+	if (call.endedAt === null || (call.summary !== null && !regenerate)) return;
 	const unfinished = await db(env)
 		.select({ n: count() })
 		.from(r)
@@ -176,9 +253,15 @@ export async function summarizeCallIfDone(env: Env, callId: string) {
 	const title = await groundedTitle(env, units);
 	await db(env)
 		.update(calls)
-		.set({ title, summary: JSON.stringify(summary) })
-		.where(and(eq(calls.id, callId), isNull(calls.summary)));
+		.set({ title: title ?? call.title, summary: JSON.stringify(summary) })
+		.where(regenerate ? eq(calls.id, callId) : and(eq(calls.id, callId), isNull(calls.summary)));
 	await publish(env, `call:${callId}`, { type: 'recording' });
+}
+
+/** Writes the call's title and summary again from its edited transcript. */
+export async function regenerateSummary(env: Env, who: SignedIn, call: EditableCall) {
+	if (!(await canEditTranscript(env, who, call))) error(403, strings.recording.errors.cannotEdit);
+	await summarizeCallIfDone(env, call.id, true);
 }
 
 export const recordingHandlers: Handlers = {

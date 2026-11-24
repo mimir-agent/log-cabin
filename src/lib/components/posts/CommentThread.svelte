@@ -33,6 +33,8 @@
 
 	type Props = {
 		comment: Comment & { replies: Comment[] };
+		/** On a page, not in a feed: the thread is a run of comments with no box around it. */
+		quiet?: boolean;
 		reactions: Record<string, { emoji: string; count: number; names: string[]; mine: boolean }[]>;
 		viewerId: string;
 		isAdmin: boolean;
@@ -80,6 +82,7 @@
 		members,
 		orgEmoji,
 		boundary,
+		quiet = false,
 		uploadUrl,
 		followUps,
 		onreply,
@@ -257,7 +260,7 @@
 
 <!-- Campsite's thread: one card, the comment and its replies as rows divided by hairlines,
      replies not indented. -->
-<div class="thread" data-replying={replying || undefined}>
+<div class="thread" data-replying={replying || undefined} data-quiet={quiet || undefined}>
 	{#if threadResolution}
 		<div class="resolved">
 			<Button variant="ghost" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
@@ -511,6 +514,14 @@
 		background: none;
 		text-align: start;
 		cursor: pointer;
+	}
+
+	/* A doc's comments run on the page without a box. */
+	.thread[data-quiet] {
+		border-width: 0;
+		border-radius: 0;
+		background: none;
+		box-shadow: none;
 	}
 
 	/* Replying from the page's box: the thread it answers stands out, as in Campsite. */

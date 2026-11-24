@@ -192,8 +192,26 @@ export const calls = {
 		disabled: 'Calls aren’t set up for this organization yet.'
 	},
 	recording: {
-		banner: (name: string) => `Recording · started by ${name}`,
 		pill: 'Recording',
+		banner: (name: string | null) =>
+			name ? `Recording · started by ${name}` : 'Recording · started automatically',
+		startedBy: (name: string | null) => (name ? `Started by ${name}` : 'Started automatically'),
+		/** Shown before joining a call that is being recorded, and to a guest when the organization records every call. */
+		consent: 'This call is recorded',
+		prompt: {
+			title: 'Record this call?',
+			yes: 'Start recording',
+			no: 'Not now'
+		},
+		setting: {
+			label: 'Call recording',
+			modes: { off: 'Off', ask: 'Ask', on: 'On' },
+			hints: {
+				off: 'Nobody can record calls. The Record button is hidden.',
+				ask: 'The person who starts a call is asked whether to record it. Record and Stop stay in the call.',
+				on: 'Every call is recorded from the start, and nobody can stop it. Everyone is told before they join.'
+			}
+		},
 		start: 'Record',
 		stop: 'Stop recording',
 		stopShort: 'Stop',
@@ -218,6 +236,19 @@ export const calls = {
 		transcript: 'Transcript',
 		noTranscript: 'No speech was transcribed.',
 		jumpToCurrent: 'Jump to current',
+		editLine: {
+			edit: 'Edit',
+			label: (speaker: string) => `Edit what ${speaker} said`,
+			save: 'Save',
+			cancel: 'Cancel',
+			edited: 'Edited',
+			showOriginal: 'Show original',
+			hideOriginal: 'Hide original',
+			original: (text: string) => `Heard as: ${text}`,
+			revert: 'Revert to original',
+			regenerate: 'Regenerate summary',
+			regenerateHint: 'Writes the title and summary again from the lines as they are now.'
+		},
 		at: (ms: number) => {
 			const seconds = Math.floor(ms / 1000);
 			const pad = (n: number) => String(n).padStart(2, '0');
@@ -248,8 +279,17 @@ export const calls = {
 		citation: (at: string) => `Play recording from ${at}`,
 		disclaimer: 'Written by AI from the transcript. Each point links to what was said.',
 		errors: {
+			cannotEdit:
+				'You can’t edit this transcript. You need to be able to edit this call or post where it is.',
+			lineNotFound: 'That line isn’t in this transcript.',
+			emptyLine: 'A line can’t be empty. Type the words, or cancel.',
 			deleteNotReady:
 				'You can delete recordings once the call has ended and they’ve finished processing.',
+			notAsked: (mode: 'off' | 'on') =>
+				mode === 'off'
+					? 'Recording is off for this organization. An admin can turn it on in settings.'
+					: 'This organization records every call automatically, so you can’t start a recording yourself.',
+			alwaysOn: 'This organization records every call, so a recording can’t be stopped.',
 			cannotRecord: 'Only people who can write where this call is can start or stop a recording.',
 			unavailable: 'Recording isn’t set up on this deployment.',
 			sfuRefused: 'The call service refused to record the audio. Try again.',

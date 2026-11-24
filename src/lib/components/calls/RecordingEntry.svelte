@@ -1,14 +1,19 @@
 <script lang="ts">
 	import { tick, untrack } from 'svelte';
 	import { page } from '$app/state';
+	import TranscriptLine from '#lib/components/calls/TranscriptLine.svelte';
 	import SuedeButton from '#lib/components/ui/SuedeButton.svelte';
 	import { mixSegments, wav } from '#lib/calls/audio.js';
 	import type { RecordingsView } from '#lib/server/recordings/view.js';
 	import { calls } from '#lib/strings/calls.js';
 	import { time } from '#lib/strings/time.js';
 
-	type Props = { callId: string; recording: RecordingsView['recordings'][number] };
-	const { callId, recording }: Props = $props();
+	type Props = {
+		callId: string;
+		recording: RecordingsView['recordings'][number];
+		canEdit: boolean;
+	};
+	const { callId, recording, canEdit }: Props = $props();
 	const s = calls.recording;
 	/** The mixed audio: an object URL once loaded, or why there is none yet. */
 	let audio = $state<string | 'loading' | 'failed' | null>(null);
@@ -85,6 +90,7 @@
 
 <article class="recording l:waterfall">
 	<h3>{s.from(time.long(recording.startedAt, page.data.timeZone))}</h3>
+	<p class="muted">{s.startedBy(recording.startedByName)}</p>
 	{#if s.status[recording.status]}<p class="muted">{s.status[recording.status]}</p>{/if}
 	<h4>{s.video}</h4>
 	{#if recording.video}
@@ -131,12 +137,12 @@
 		<div class="transcript" bind:this={transcript}>
 			<ol>
 				{#each recording.lines as line (line.id)}
-					<li id="line-{line.id}" aria-current={line === current ? 'true' : undefined}>
-						<button type="button" onclick={() => seek(line.startMs)}>
-							<time class="muted">{s.at(line.startMs)}</time>
-							<span class="turn"><strong>{line.speaker}</strong> {line.text}</span>
-						</button>
-					</li>
+					<TranscriptLine
+						{line}
+						current={line === current}
+						{canEdit}
+						onseek={() => seek(line.startMs)}
+					/>
 				{/each}
 			</ol>
 			{#if current && !currentVisible}
@@ -195,56 +201,6 @@
 		margin: 0;
 		padding: 0;
 		list-style: none;
-	}
-
-	li {
-		margin-inline: calc(var(--gap-sm) * -1);
-		border-radius: var(--radius-control);
-		transition: background-color var(--motion-fast) var(--motion-ease);
-	}
-
-	/* A line is a button that looks like text: the time sits in its own column so the words
-	   line up, and the words stay selectable. */
-	li button {
-		display: grid;
-		grid-template-columns: 3.5rem minmax(0, 1fr);
-		column-gap: var(--gap-sm);
-		align-items: baseline;
-		inline-size: 100%;
-		padding: var(--gap-xs) var(--gap-sm);
-		border: 0;
-		border-radius: inherit;
-		background: none;
-		color: inherit;
-		font: inherit;
-		text-align: start;
-		cursor: pointer;
-		user-select: text;
-	}
-
-	/* The line being spoken: a pale fill, quieter than the one a citation lands on. */
-	li[aria-current] {
-		background: color-mix(in srgb, var(--hue-z0-border) 50%, transparent);
-	}
-
-	/* A citation lands here: the line it points at lights up in the accent's pale fill. */
-	li:target {
-		background: var(--hue-accent-subtle);
-	}
-
-	time {
-		font-size: var(--type-caption);
-		font-variant-numeric: tabular-nums;
-	}
-
-	.turn {
-		font-size: var(--type-prose);
-		line-height: var(--leading-loose);
-		overflow-wrap: anywhere;
-	}
-
-	.turn strong {
-		font-weight: var(--fw-medium);
 	}
 
 	.jump {

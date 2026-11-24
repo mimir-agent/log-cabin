@@ -87,7 +87,7 @@ describe('/tags/[tag]', () => {
 		await renameTag(w.env, 'launch', 'release');
 
 		const moved = await Promise.resolve(tagPage(ada, 'launch')).catch((e: unknown) => e);
-		expect(moved).toMatchObject({ status: 301, location: '/tags/release' });
+		expect(moved).toMatchObject({ status: 302, location: '/tags/release' });
 		expect((await tagPage(ada, 'release')).items).toHaveLength(1);
 	});
 });

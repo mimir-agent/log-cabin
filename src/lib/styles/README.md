@@ -61,22 +61,22 @@ server to write at first paint, and `applyTheme()` to switch the open page in on
 
 ## Type
 
-| Token             | Size     | Use for                                       |
-| ----------------- | -------- | --------------------------------------------- |
-| `--type-caption`  | 12       | Timestamps, counts, metadata                  |
-| `--type-body`     | 14       | The interface: rows, buttons, labels          |
-| `--type-prose`    | 15       | Bodies of posts, comments and notes           |
-| `--measure-prose` | 38em     | The long-form line: a note body               |
-| `--measure-post`  | 36em     | A post body, on its page and in the composer  |
-| `--type-title`    | 20       | A title inside the content (settings section) |
-| `--type-display`  | 24 to 32 | A post's or note's own title on its page      |
+| Token            | Size     | Use for                                         |
+| ---------------- | -------- | ----------------------------------------------- |
+| `--type-caption` | 12       | Timestamps, counts, metadata                    |
+| `--type-body`    | 14       | The interface: rows, buttons, labels            |
+| `--type-prose`   | 15       | Bodies of posts, comments and notes             |
+| `--measure-post` | 36em     | A post body, on its page and in the composer    |
+| `--measure-doc`  | 40em     | A doc's line (`--page-doc`, 50rem, is its page) |
+| `--type-title`   | 20       | A title inside the content (settings section)   |
+| `--type-display` | 24 to 32 | A post's or note's own title on its page        |
 
 Set line height where you set the size: `--leading-ui` (1) for one line inside a control,
 `--leading-tight` for headings and dense single lines, `--leading-loose` for anything that wraps.
 Weight: regular almost everywhere, `--fw-medium` for a person's or post's name in a list,
 `--fw-semibold` for titles. `<time>` and `.u:tabular` get tabular figures.
 
-Wrap anything people wrote in `.prose`. Use `data-size="compact"` for comments and chat. A post's body takes `data-size="post"` and a note's `data-size="note"`; only those two hold a line: `--measure-post` for a post, `--measure-prose` for a note.
+Wrap anything people wrote in `.prose`. Use `data-size="compact"` for comments and chat. A post's body takes `data-size="post"` and holds `--measure-post`; a note's `data-size="note"` holds `--measure-doc` and lets images, galleries and code use `--page-doc`.
 
 The page header names the screen at interface size (14px semibold), the way dense apps do. Titles
 inside the content use the utilities `u:type-display` (a post's or note's own title) and

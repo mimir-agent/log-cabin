@@ -18,7 +18,7 @@ async function memberOrRedirect(env: Env, event: Pick<RequestEvent, 'params' | '
 	const { username } = event.params;
 	const found = await lookUpUsername(env, username);
 	if (!found) error(404, auth.profile.errors.notFound);
-	if ('redirectTo' in found) redirect(301, `/people/${found.redirectTo}${event.url.search}`);
+	if ('redirectTo' in found) redirect(302, `/people/${found.redirectTo}${event.url.search}`);
 	const member = await getMemberByUserId(env, found.userId);
 	if (!member) throw new Error(`/people/${username}: user ${found.userId} has no member row`);
 	return member;

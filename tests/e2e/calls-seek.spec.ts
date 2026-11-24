@@ -89,6 +89,8 @@ test.beforeEach(async ({ context, page }) => {
 });
 
 const line = (page: Page, n: number) => page.locator(`#line-${lineId(n)}`);
+/** The button that seeks to a line; its name starts with the line's time, unlike its Edit button. */
+const seek = (page: Page, n: number) => line(page, n).getByRole('button', { name: /^\d+:\d\d / });
 const played = (page: Page) =>
 	page.locator('audio').evaluate((el: HTMLAudioElement) => ({
 		at: el.currentTime,
@@ -98,7 +100,7 @@ const played = (page: Page) =>
 test('plays from a clicked line, and marks the line being spoken as it goes', async ({ page }) => {
 	await page.goto(`/calls/${ids.call}`, { waitUntil: 'networkidle' });
 
-	await line(page, 3).getByRole('button').click();
+	await seek(page, 3).click();
 
 	await expect(line(page, 3)).toHaveAttribute('aria-current', 'true');
 	const now = await played(page);
@@ -113,7 +115,7 @@ test('plays from a clicked line, and marks the line being spoken as it goes', as
 
 test('plays from a line when Enter is pressed on it', async ({ page }) => {
 	await page.goto(`/calls/${ids.call}`, { waitUntil: 'networkidle' });
-	await line(page, 8).getByRole('button').focus();
+	await seek(page, 8).focus();
 
 	await page.keyboard.press('Enter');
 
@@ -132,7 +134,7 @@ test('plays from the time a summary point cites', async ({ page }) => {
 
 test('leaves the page where the reader put it, and offers Jump to current', async ({ page }) => {
 	await page.goto(`/calls/${ids.call}`, { waitUntil: 'networkidle' });
-	await line(page, 1).getByRole('button').click();
+	await seek(page, 1).click();
 	await expect(line(page, 1)).toHaveAttribute('aria-current', 'true');
 	await expect(page.getByRole('button', { name: s.jumpToCurrent })).toHaveCount(0);
 

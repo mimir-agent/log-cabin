@@ -9,6 +9,7 @@ import { db, schema } from '../db';
 import type { SignedIn } from '../auth/session';
 import { startCall } from '../calls/calls';
 import { createGuestPass } from '../calls/guests';
+import { recordsEveryCall } from '../recordings/recordings';
 import { calcom as strings } from '../../strings/calcom';
 import {
 	assertCalcomOn,
@@ -59,6 +60,21 @@ async function openGuestLink(env: Env, bookingId: string, signature: string, now
 	return { booking, window, state, guests: await outsideAttendees(env, booking.attendees) };
 }
 
+/** Whether the booking's call is being recorded now, or will be from its start. */
+async function bookingRecorded(env: Env, bookingId: string): Promise<boolean> {
+	if (await recordsEveryCall(env)) return true;
+	const { calls, callRecordings: r } = schema;
+	const live = await db(env)
+		.select({ id: r.id })
+		.from(r)
+		.innerJoin(calls, eq(calls.id, r.callId))
+		.where(
+			and(eq(calls.calcomBookingId, bookingId), isNull(calls.endedAt), eq(r.status, 'recording'))
+		)
+		.get();
+	return !!live;
+}
+
 /** What someone with the booking's link sees before joining as a guest. */
 export async function guestLobby(env: Env, bookingId: string, signature: string, now = Date.now()) {
 	const { booking, state, guests } = await openGuestLink(env, bookingId, signature, now);
@@ -67,7 +83,8 @@ export async function guestLobby(env: Env, bookingId: string, signature: string,
 		startsAt: booking.startsAt,
 		endsAt: booking.endsAt,
 		state,
-		guests
+		guests,
+		recorded: await bookingRecorded(env, bookingId)
 	};
 }
 

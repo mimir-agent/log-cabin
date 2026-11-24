@@ -9,7 +9,9 @@ import {
 	endCall
 } from '../calls/calls';
 import { callsWorld, offer, status } from '../calls/testing';
+import { shareCall } from '../calls/shares';
 import { createProject } from '../posts/projects';
+import { updateOrg } from '../org';
 import { fakeBucket } from '../testing/fake-durable-object';
 import { CHECK_MODEL, SUMMARY_MODEL } from '../ai/grounded';
 import { activeRecording, startRecording, stopRecording, flushGraceMs } from './recordings';
@@ -21,8 +23,11 @@ import {
 	type SinkInit
 } from './sink';
 import {
+	editTranscriptLine,
 	finishIfTranscribed,
 	recordingHandlers,
+	regenerateSummary,
+	revertTranscriptLine,
 	summarizeCallIfDone,
 	TRANSCRIBE_MODEL,
 	transcribeSegment
@@ -492,6 +497,132 @@ describe('transcripts', () => {
 			title: string | null;
 			summary: string | null;
 		};
+
+	/** An ended call with one transcribed line, 'I will price tents.', and its summary written. */
+	async function summarizedCall() {
+		const { w, recordingId, segmentId } = await boSpoke();
+		w.ai.bullets = () => [{ text: 'Bo will price tents', cites: [1] }];
+		w.ai.heard = [{ start: 1.5, end: 3, text: 'I will price tents.' }];
+		await transcribeSegment(w.env, segmentId);
+		await stopRecording(w.env, w.ada, await w.call(), Date.now() - flushGraceMs);
+		await finishIfTranscribed(w.env, recordingId, Date.now());
+		await endCall(w.env, w.ada, await w.call());
+		await summarizeCallIfDone(w.env, w.callId);
+		const [line] = (await recordingsView(w.env, w.ada, await w.call())).recordings[0].lines;
+		return { w, line };
+	}
+
+	it('fixes a line in place, keeps what was heard, and puts it back on request', async () => {
+		const { w, line } = await summarizedCall();
+		const linesOf = async () =>
+			(await recordingsView(w.env, w.ada, await w.call())).recordings[0].lines;
+		const searchBody = () =>
+			(
+				w.sqlite
+					.prepare("SELECT body FROM search_index WHERE kind = 'call' AND ref_id = ?")
+					.get(w.callId) as { body: string }
+			).body;
+		expect(line).toMatchObject({ text: 'I will price tents.', original: null });
+
+		await editTranscriptLine(w.env, w.bo, await w.call(), line.id, '  I will price Tentsile.  ');
+		await editTranscriptLine(w.env, w.bo, await w.call(), line.id, 'I will price Tentsile tents.');
+
+		expect(await linesOf()).toEqual([
+			{ ...line, text: 'I will price Tentsile tents.', original: 'I will price tents.' }
+		]);
+		expect(searchBody()).toContain('Tentsile');
+
+		await revertTranscriptLine(w.env, w.bo, await w.call(), line.id);
+
+		expect(await linesOf()).toEqual([line]);
+		expect(searchBody()).not.toContain('Tentsile');
+	});
+
+	it("lets only people who may edit the call or post where it is edit its lines, and only the call's own", async () => {
+		const { w, line } = await summarizedCall();
+		const asViewer = await loadCall(w.env, w.vi, w.callId);
+		const other = await startCall(w.env, w.ada, { kind: 'room', id: w.ada.user.id }, Date.now());
+
+		expect(await status(editTranscriptLine(w.env, w.vi, asViewer, line.id, 'Mine now.'))).toBe(403);
+		expect(await status(revertTranscriptLine(w.env, w.vi, asViewer, line.id))).toBe(403);
+		expect(await status(regenerateSummary(w.env, w.vi, asViewer))).toBe(403);
+		expect(await status(editTranscriptLine(w.env, w.ada, await w.call(), line.id, '  '))).toBe(400);
+		expect(
+			await status(
+				editTranscriptLine(w.env, w.ada, await loadCall(w.env, w.ada, other), line.id, 'Elsewhere.')
+			)
+		).toBe(404);
+		expect((await recordingsView(w.env, w.ada, await w.call())).recordings[0].lines).toEqual([
+			line
+		]);
+		expect((await recordingsView(w.env, w.vi, asViewer)).canEditTranscript).toBe(false);
+		expect((await recordingsView(w.env, w.bo, await w.call())).canEditTranscript).toBe(true);
+	});
+
+	it('lets a channel the call is shared into edit its lines only when the share allows editing', async () => {
+		const { w, line } = await summarizedCall();
+		const channel = await w.privateProject(w.ada, w.vi);
+		const asViewer = async () => loadCall(w.env, w.vi, w.callId);
+
+		await shareCall(w.env, w.ada, await w.call(), channel.id, 'view');
+		expect(await status(editTranscriptLine(w.env, w.vi, await asViewer(), line.id, 'Nope.'))).toBe(
+			403
+		);
+		expect((await recordingsView(w.env, w.vi, await asViewer())).canEditTranscript).toBe(false);
+
+		await shareCall(w.env, w.ada, await w.call(), channel.id, 'edit');
+		await editTranscriptLine(w.env, w.vi, await asViewer(), line.id, 'I will price Tentsile.');
+		expect((await recordingsView(w.env, w.vi, await asViewer())).canEditTranscript).toBe(true);
+		expect(
+			(await recordingsView(w.env, w.ada, await w.call())).recordings[0].lines[0]
+		).toMatchObject({ text: 'I will price Tentsile.', original: 'I will price tents.' });
+	});
+
+	it("refuses someone shown a call through a share who can't see where it began, instead of failing the page", async () => {
+		const { w, line } = await summarizedCall();
+		const origin = await w.privateProject(w.ada);
+		const channel = await w.privateProject(w.ada, w.cy);
+		const callId = await startCall(w.env, w.ada, origin, Date.now());
+		await shareCall(w.env, w.ada, await loadCall(w.env, w.ada, callId), channel.id, 'view');
+		await endCall(w.env, w.ada, await loadCall(w.env, w.ada, callId));
+		const asCy = await loadCall(w.env, w.cy, callId);
+
+		expect(await status(editTranscriptLine(w.env, w.cy, asCy, line.id, 'Nope.'))).toBe(403);
+		expect((await recordingsView(w.env, w.cy, asCy)).canEditTranscript).toBe(false);
+	});
+
+	it('leaves the summary alone after an edit, and writes it again from the edited lines on request', async () => {
+		const { w, line } = await summarizedCall();
+		const before = callRow(w);
+		w.ai.bullets = (system) =>
+			system.includes('title')
+				? [{ text: 'Bo will price Tentsile', cites: [1] }]
+				: [{ text: 'Bo will price Tentsile tents', cites: [1] }];
+
+		await editTranscriptLine(w.env, w.ada, await w.call(), line.id, 'I will price Tentsile tents.');
+		expect(callRow(w)).toEqual(before);
+		await summarizeCallIfDone(w.env, w.callId);
+		expect(callRow(w)).toEqual(before);
+
+		w.ai.asked.length = 0;
+		await regenerateSummary(w.env, w.ada, await w.call());
+
+		const asked = JSON.stringify(w.ai.asked.map((a) => a.input));
+		expect(asked).toContain('I will price Tentsile tents.');
+		const view = await recordingsView(w.env, w.ada, await w.call());
+		expect(view.title).toBe('Bo will price Tentsile');
+		expect(view.summary!.sections[0].summary.bullets).toEqual([
+			{ text: 'Bo will price Tentsile tents', cites: [1] }
+		]);
+
+		w.ai.bullets = (system) =>
+			system.includes('title') ? [] : [{ text: 'Bo will price Tentsile tents', cites: [1] }];
+		await regenerateSummary(w.env, w.ada, await w.call());
+
+		expect((await recordingsView(w.env, w.ada, await w.call())).title).toBe(
+			'Bo will price Tentsile'
+		);
+	});
 
 	it("numbers a restarted sink's segments after the ones its track already saved", async () => {
 		const { w, init } = await boSpoke();
@@ -973,5 +1104,81 @@ describe('removing recordings', () => {
 
 		expect(w.objects.size).toBe(before);
 		expect((await recordingsView(w.env, w.ada, await w.call())).recordings).toHaveLength(1);
+	});
+});
+
+describe('the org’s recording setting', () => {
+	/** Turns recording On, then starts a new call in the project, once the world's first has ended. */
+	async function callRecordedFromStart(w: World) {
+		const first = await w.call();
+		await endCall(w.env, w.ada, first);
+		await updateOrg(w.env, { callRecording: 'on' });
+		return startCall(w.env, w.ada, first.place, Date.now());
+	}
+
+	it('Ask, the default, lets a member start and stop a recording, and asks only the call’s starter', async () => {
+		const w = await recordingWorld();
+		await w.speak(w.ada);
+
+		const starter = await recordingsView(w.env, w.ada, await w.call());
+		const other = await recordingsView(w.env, w.bo, await w.call());
+		expect(starter).toMatchObject({ mode: 'ask', prompt: true, canRecord: true });
+		expect(other).toMatchObject({ mode: 'ask', prompt: false, canRecord: true });
+
+		await startRecording(w.env, w.bo, await w.call());
+		await stopRecording(w.env, w.bo, await w.call());
+		const after = await recordingsView(w.env, w.ada, await w.call());
+		expect(after.prompt).toBe(false);
+		expect(after.recordings).toHaveLength(1);
+		expect(after.recordings[0].startedByName).toBe('Bo');
+	});
+
+	it('Off refuses to start a recording, and the call page has no record control', async () => {
+		const w = await recordingWorld();
+		await updateOrg(w.env, { callRecording: 'off' });
+		await w.speak(w.ada);
+
+		expect(await status(startRecording(w.env, w.ada, await w.call()))).toBe(403);
+		const view = await recordingsView(w.env, w.ada, await w.call());
+		expect(view).toMatchObject({ mode: 'off', prompt: false, active: null });
+		expect(w.adapterRequests('new')).toEqual([]);
+	});
+
+	it('On records every new call from its start, as started automatically, and nobody can stop or start it by hand', async () => {
+		const w = await recordingWorld();
+		const callId = await callRecordedFromStart(w);
+		const loaded = () => loadCall(w.env, w.bo, callId);
+
+		const view = await recordingsView(w.env, w.bo, await loaded());
+		expect(view).toMatchObject({ mode: 'on', prompt: false });
+		expect(view.active).toMatchObject({ startedByName: null });
+		expect(await status(stopRecording(w.env, w.bo, await loaded()))).toBe(403);
+		expect(await status(startRecording(w.env, w.bo, await loaded()))).toBe(403);
+
+		await endCall(w.env, w.ada, await loaded());
+		const [recording] = (await recordingsView(w.env, w.ada, await loaded())).recordings;
+		expect(recording).toMatchObject({ startedByName: null });
+	});
+
+	it('On gives the first person to speak an adapter, because the recording is already running', async () => {
+		const w = await recordingWorld();
+		const callId = await callRecordedFromStart(w);
+		const joined = await joinCall(w.env, w.cy, await loadCall(w.env, w.cy, callId));
+		await publishTracks(w.env, w.cy, await loadCall(w.env, w.cy, callId), joined.participantId, {
+			sessionDescription: offer,
+			tracks: [{ location: 'local', mid: '0', trackName: 'audio' }]
+		});
+
+		expect(w.adapterRequests('new')).toHaveLength(1);
+	});
+
+	it('keeps naming who started a recording begun by hand before the setting changed to On', async () => {
+		const w = await recordingWorld();
+		await w.speak(w.ada);
+		await startRecording(w.env, w.ada, await w.call());
+		await updateOrg(w.env, { callRecording: 'on' });
+
+		const view = await recordingsView(w.env, w.bo, await w.call());
+		expect(view.active).toMatchObject({ startedByName: 'Ada' });
 	});
 });

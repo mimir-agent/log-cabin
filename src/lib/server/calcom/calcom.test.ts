@@ -334,6 +334,7 @@ describe('the admin’s off switch', () => {
 		const form = new FormData();
 		form.set('name', 'Log Cabin');
 		form.set('domainJoin', 'off');
+		form.set('callRecording', 'ask');
 		await orgActions.default({
 			request: new Request(url, { method: 'POST', body: form }),
 			locals: { user: w.admin.user, member: w.admin.member },

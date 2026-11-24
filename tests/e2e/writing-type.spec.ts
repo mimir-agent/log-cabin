@@ -217,15 +217,15 @@ for (const [profile, { use, touch }] of Object.entries(profiles)) {
 			}
 		});
 
-		test('a note holds 38em and a post 36em; comments and chat keep their column', async () => {
+		test('a note holds 40em and a post 36em; comments and chat keep their column', async () => {
 			const measure = async (page: Page, selector: string, size: number, em: number) => {
 				const { maxWidth } = await styleOf(page.locator(selector).first(), 'maxWidth');
 				expect(maxWidth, selector).toBe(`${size * em}px`);
 			};
 			const note = await openNote(context, notePath);
-			await measure(note, '.body .ProseMirror', 16, 38);
+			await measure(note, '.body .ProseMirror', 16, 40);
 			const connecting = await openNoteConnecting(context, notePath);
-			await measure(connecting, '.painted .prose', 16, 38);
+			await measure(connecting, '.painted .prose', 16, 40);
 
 			const post = await context.newPage();
 			await post.goto(postPath, { waitUntil: 'networkidle' });

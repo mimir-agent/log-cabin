@@ -18,7 +18,16 @@ vi.mock('#lib/calls/video-recorder.js', () => ({
 	CompositeRecorder: { start: async () => call.recorder }
 }));
 
-const idle = { active: null, canRecord: true, title: null, summary: null, recordings: [] };
+const idle = {
+	active: null,
+	mode: 'ask' as const,
+	prompt: false,
+	canRecord: true,
+	canEditTranscript: true,
+	title: null,
+	summary: null,
+	recordings: []
+};
 const recording = { ...idle, active: { id: 'rec-1', startedByName: 'Ada', mine: true } };
 
 describe('RecordingBar', () => {
@@ -105,5 +114,44 @@ describe('RecordingBar', () => {
 		screen.unmount();
 		expect(call.recorder.stop).toHaveBeenCalledOnce();
 		vi.unstubAllGlobals();
+	});
+
+	it('shows no record control when recording is off', async () => {
+		const stage = document.createElement('div');
+		const screen = render(RecordingBar, {
+			callId: 'call-1',
+			stage,
+			onerror: vi.fn(),
+			view: { ...idle, mode: 'off' }
+		});
+
+		await expect.element(screen.getByRole('button', { name: 'Record' })).not.toBeInTheDocument();
+	});
+
+	it('says it started automatically and offers no Stop when the org records every call', async () => {
+		const screen = render(RecordingBar, {
+			callId: 'call-1',
+			onerror: vi.fn(),
+			view: { ...idle, mode: 'on', active: { id: 'rec-1', startedByName: null, mine: true } }
+		});
+
+		const banner = screen.getByRole('status');
+		await expect.element(banner).toHaveTextContent('Recording · started automatically');
+		await expect.element(banner.getByRole('button')).not.toBeInTheDocument();
+	});
+
+	it('asks the person who started the call, and Not now leaves the Record button', async () => {
+		const stage = document.createElement('div');
+		const screen = render(RecordingBar, {
+			callId: 'call-1',
+			stage,
+			onerror: vi.fn(),
+			view: { ...idle, prompt: true }
+		});
+
+		await expect.element(screen.getByRole('dialog', { name: 'Record this call?' })).toBeVisible();
+		await screen.getByRole('button', { name: 'Not now' }).click();
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', { name: 'Record' })).toBeVisible();
 	});
 });

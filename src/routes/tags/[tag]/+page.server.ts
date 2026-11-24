@@ -14,7 +14,7 @@ export const load: PageServerLoad = async (event) => {
 	if (textTags(`#${tag}`)[0] !== tag) error(404, strings.errors.tagInvalid);
 	// A renamed tag's old address goes to its new one.
 	const current = await resolveTagName(getEnv(), tag);
-	if (current && current !== tag) redirect(301, resolve('/tags/[tag]', { tag: current }));
+	if (current && current !== tag) redirect(302, resolve('/tags/[tag]', { tag: current }));
 	const page = await feed(getEnv(), who, { tag, cursor: event.url.searchParams.get('cursor') });
 	return { tag, ...page };
 };

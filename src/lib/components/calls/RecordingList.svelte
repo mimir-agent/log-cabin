@@ -3,7 +3,7 @@
 	import type { RecordingsView } from '#lib/server/recordings/view.js';
 	import { calls } from '#lib/strings/calls.js';
 
-	type Props = { callId: string; view: Pick<RecordingsView, 'recordings'> };
+	type Props = { callId: string; view: Pick<RecordingsView, 'recordings' | 'canEditTranscript'> };
 	const { callId, view }: Props = $props();
 	const s = calls.recording;
 	const entries: Record<string, RecordingEntry> = {};
@@ -21,7 +21,12 @@
 <section class="l:waterfall" aria-label={s.title}>
 	<h2 class="u:type-title">{s.title}</h2>
 	{#each view.recordings as recording (recording.id)}
-		<RecordingEntry bind:this={entries[recording.id]} {callId} {recording} />
+		<RecordingEntry
+			bind:this={entries[recording.id]}
+			{callId}
+			{recording}
+			canEdit={view.canEditTranscript}
+		/>
 	{/each}
 </section>
 

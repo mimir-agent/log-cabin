@@ -13,6 +13,11 @@ import { callsEnabled } from '#lib/server/calls/sfu.js';
 import { viewerFollowUps } from '#lib/server/follow-ups.js';
 import { recordingsView } from '#lib/server/recordings/view.js';
 import { deleteAllRecordings } from '#lib/server/recordings/remove.js';
+import {
+	editTranscriptLine,
+	regenerateSummary,
+	revertTranscriptLine
+} from '#lib/server/recordings/transcripts.js';
 import { pinState } from '#lib/server/posts/pins.js';
 import { calls as strings } from '#lib/strings/calls.js';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
@@ -86,5 +91,19 @@ export const actions: Actions = {
 	deleteRecordings: async (event) => {
 		const { env, who, call } = await signedInWithCall(event);
 		await deleteAllRecordings(env, who, call);
+	},
+	editLine: async (event) => {
+		const { env, who, call } = await signedInWithCall(event);
+		const form = await event.request.formData();
+		await editTranscriptLine(env, who, call, String(form.get('lineId')), String(form.get('text')));
+	},
+	revertLine: async (event) => {
+		const { env, who, call } = await signedInWithCall(event);
+		const form = await event.request.formData();
+		await revertTranscriptLine(env, who, call, String(form.get('lineId')));
+	},
+	regenerateSummary: async (event) => {
+		const { env, who, call } = await signedInWithCall(event);
+		await regenerateSummary(env, who, call);
 	}
 };

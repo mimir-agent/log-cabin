@@ -11,6 +11,7 @@ describe('RecordingList', () => {
 			id: 'rec-1',
 			status: 'ready' as const,
 			startedAt: Date.UTC(2026, 10, 19, 3, 58),
+			startedByName: null,
 			video: false,
 			segments: [],
 			lines: []
@@ -18,12 +19,13 @@ describe('RecordingList', () => {
 
 		const screen = render(RecordingList, {
 			callId: 'call-1',
-			view: { recordings: [recording] }
+			view: { recordings: [recording], canEditTranscript: false }
 		});
 
 		await expect
 			.element(screen.getByRole('heading', { name: 'Recording from Nov 19, 2026, 12:58 PM' }))
 			.toBeVisible();
+		await expect.element(screen.getByText('Started automatically')).toBeVisible();
 	});
 
 	it('ends Mixing the audio in a failed state with Try again when a segment never arrives', async () => {
@@ -45,11 +47,15 @@ describe('RecordingList', () => {
 			id: 'rec-1',
 			status: 'ready' as const,
 			startedAt: Date.UTC(2026, 10, 19, 3, 58),
+			startedByName: null,
 			video: false,
 			segments: [{ id: 'seg-1', startMs: 0 }],
 			lines: []
 		};
-		const screen = render(RecordingList, { callId: 'call-1', view: { recordings: [recording] } });
+		const screen = render(RecordingList, {
+			callId: 'call-1',
+			view: { recordings: [recording], canEditTranscript: false }
+		});
 
 		await screen.getByRole('button', { name: 'Load audio' }).click();
 

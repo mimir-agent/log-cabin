@@ -1,9 +1,16 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import SuedeButton from '#lib/components/ui/SuedeButton.svelte';
 	import type { CallSummary } from '#lib/server/recordings/transcripts.js';
 	import { calls } from '#lib/strings/calls.js';
 
-	type Props = { summary: CallSummary; onseek: (lineId: string) => void };
-	const { summary, onseek }: Props = $props();
+	type Props = {
+		summary: CallSummary;
+		onseek: (lineId: string) => void;
+		/** Offered when lines were edited after the summary was written. */
+		canRegenerate?: boolean;
+	};
+	const { summary, onseek, canRegenerate = false }: Props = $props();
 	const s = calls.recording;
 </script>
 
@@ -31,6 +38,12 @@
 		{/if}
 	{/each}
 	<small>{s.disclaimer}</small>
+	{#if canRegenerate}
+		<form method="POST" action="?/regenerateSummary" use:enhance>
+			<small>{s.editLine.regenerateHint}</small>
+			<SuedeButton type="submit">{s.editLine.regenerate}</SuedeButton>
+		</form>
+	{/if}
 </section>
 
 <style>

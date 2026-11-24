@@ -11,6 +11,10 @@ export type Role = (typeof roles)[number];
 export const domainJoinModes = ['off', 'direct', 'request'] as const;
 export type DomainJoin = (typeof domainJoinModes)[number];
 
+/** 0044: off records nothing, ask lets the person who starts a call decide, on records every call. */
+export const callRecordingModes = ['off', 'ask', 'on'] as const;
+export type CallRecordingMode = (typeof callRecordingModes)[number];
+
 /** 0024: how each person lays out the notes index. */
 export const noteLayouts = ['list', 'grid'] as const;
 export type NoteLayout = (typeof noteLayouts)[number];
@@ -35,6 +39,7 @@ export const org = sqliteTable('org', {
 		.notNull()
 		.default('members'),
 	domainJoin: text('domain_join', { enum: domainJoinModes }).notNull().default('off'),
+	callRecording: text('call_recording', { enum: callRecordingModes }).notNull().default('ask'),
 	createdAt: integer('created_at').notNull()
 });
 

@@ -18,6 +18,8 @@ export const callRecordings = sqliteTable('call_recordings', {
 	startedBy: text('started_by')
 		.notNull()
 		.references(() => users.id),
+	/** 0044: the org's setting started it, not startedBy, who is then the call's starter. */
+	auto: integer('auto', { mode: 'boolean' }).notNull().default(false),
 	startedAt: integer('started_at').notNull(),
 	stoppedAt: integer('stopped_at'),
 	status: text('status', { enum: recordingStatuses }).notNull().default('recording'),
@@ -68,7 +70,9 @@ export const callTranscriptLines = sqliteTable('call_transcript_lines', {
 		.references(() => callRecordingSegments.id, { onDelete: 'cascade' }),
 	startMs: integer('start_ms').notNull(),
 	endMs: integer('end_ms').notNull(),
-	text: text('text').notNull()
+	text: text('text').notNull(),
+	/** What was heard, once `text` has been edited. */
+	originalText: text('original_text')
 });
 
 export const callRecordingVideoParts = sqliteTable(

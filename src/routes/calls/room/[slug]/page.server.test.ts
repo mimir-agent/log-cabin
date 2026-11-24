@@ -59,7 +59,7 @@ describe('/calls/room/<slug>', () => {
 
 		await changeUsername(env, ada.user.id, 'ada-o');
 		const moved = await Promise.resolve(load(event(bo, 'ada'))).catch((e: unknown) => e);
-		expect(moved).toMatchObject({ status: 301, location: '/calls/room/ada-o' });
+		expect(moved).toMatchObject({ status: 302, location: '/calls/room/ada-o' });
 		expect(await load(event(bo, 'ada-o'))).toMatchObject({ owner: { name: 'Ada' } });
 	});
 

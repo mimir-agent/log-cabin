@@ -224,7 +224,8 @@ describe('AI summaries', () => {
 		const settings = event(admin, '/settings/org', '', {
 			name: 'Log Cabin',
 			domain: '',
-			domainJoin: 'off'
+			domainJoin: 'off',
+			callRecording: 'ask'
 		});
 		await orgActions.default(settings as never);
 

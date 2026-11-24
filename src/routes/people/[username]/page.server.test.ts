@@ -75,7 +75,7 @@ describe('/people/<username>', () => {
 		expect(await rename(bo.session, 'bo-chen')).toEqual({ saved: true });
 
 		expect(await outcome(load(at(ada, '/people/bo', { username: 'bo' })))).toEqual({
-			status: 301,
+			status: 302,
 			redirect: '/people/bo-chen'
 		});
 	});
@@ -93,7 +93,7 @@ describe('/people/<username>', () => {
 		const { ada, bo } = await world();
 		expect(
 			await outcome(loadByMemberId(at(ada, `/members/${bo.memberId}`, { id: bo.memberId })))
-		).toEqual({ status: 301, redirect: '/people/bo' });
+		).toEqual({ status: 302, redirect: '/people/bo' });
 	});
 });
 

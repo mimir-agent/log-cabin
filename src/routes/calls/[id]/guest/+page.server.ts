@@ -3,6 +3,7 @@ import { getEnv } from '#lib/server/platform.js';
 import { loadCall } from '#lib/server/calls/calls.js';
 import { guestPassCookie, readGuestPass } from '#lib/server/calls/guests.js';
 import { callsEnabled } from '#lib/server/calls/sfu.js';
+import { activeRecording } from '#lib/server/recordings/recordings.js';
 import { bookingOfCall } from '#lib/server/calcom/calcom.js';
 import { calcom } from '#lib/strings/calcom.js';
 import { calls } from '#lib/strings/calls.js';
@@ -21,6 +22,7 @@ export const load: PageServerLoad = async (event) => {
 	const booking = (await bookingOfCall(env, call))!;
 	return {
 		call: { id: call.id, ended: call.endedAt !== null, participants: call.participants },
+		recorded: !!(await activeRecording(env, call.id)),
 		name: guest.guest.name,
 		title: booking.title
 	};

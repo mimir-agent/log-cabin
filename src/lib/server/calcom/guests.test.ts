@@ -2,6 +2,7 @@ import { isHttpError, isRedirect } from '@sveltejs/kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SignedIn } from '../auth/session';
 import { startCall } from '../calls/calls';
+import { updateOrg } from '../org';
 import { actions, load as bookingLoad } from '../../../routes/calls/booking/[id]/+page.server';
 import { load as guestPageLoad } from '../../../routes/calls/[id]/guest/+page.server';
 import { load as callPageLoad } from '../../../routes/calls/[id]/+page.server';
@@ -27,8 +28,8 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 /** Ada sends her bookings to the Bookings project; Bo, a member, is on this booking too. */
-async function bookedWorld() {
-	const w = await calcomWorld();
+async function bookedWorld(options: { recording?: boolean } = {}) {
+	const w = await calcomWorld(options);
 	const bo = await w.person('Bo', 'member');
 	const ada = await connect(w.admin, { place: w.projectId, apiKey: 'cal_live_ada' });
 	const attendees = [
@@ -43,7 +44,7 @@ async function bookedWorld() {
 function lobby(bookingId: string, signature: string, who: SignedIn | null = null) {
 	const path = `/calls/booking/${bookingId}?guest=${signature}`;
 	return bookingLoad(pageEvent(who, path, { id: bookingId })) as Promise<{
-		lobby: { state: string; guests: string[] };
+		lobby: { state: string; guests: string[]; recorded: boolean };
 	}>;
 }
 
@@ -223,5 +224,27 @@ describe('joining a booking’s call as a guest', () => {
 		const opened = await statusOrRedirect(() => lobby(w.bookingId, w.signature, w.bo));
 
 		expect(opened).toMatch(/^\/calls\/\w+$/);
+	});
+});
+
+describe('the guest join screen and recording', () => {
+	it('says nothing about recording while the org asks, until a recording is running', async () => {
+		const w = await bookedWorld();
+
+		expect((await lobby(w.bookingId, w.signature)).lobby.recorded).toBe(false);
+	});
+
+	it('says the call is recorded when the org records every call', async () => {
+		const w = await bookedWorld({ recording: true });
+		await updateOrg(w.env, { callRecording: 'on' });
+
+		expect((await lobby(w.bookingId, w.signature)).lobby.recorded).toBe(true);
+	});
+
+	it('says nothing when recording is off', async () => {
+		const w = await bookedWorld({ recording: true });
+		await updateOrg(w.env, { callRecording: 'off' });
+
+		expect((await lobby(w.bookingId, w.signature)).lobby.recorded).toBe(false);
 	});
 });

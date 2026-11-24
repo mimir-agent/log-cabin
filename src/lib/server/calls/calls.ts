@@ -13,7 +13,12 @@ import { acceptOnJoin, cancelRinging } from './invitations';
 import { placeOf, type CallPlace } from './places';
 import { isSharedWith } from './shares';
 import * as sfu from './sfu';
-import { endRecording, syncRecording } from '../recordings/recordings';
+import {
+	endRecording,
+	startAutoRecording,
+	syncRecording,
+	activeRecording
+} from '../recordings/recordings';
 
 type CallRow = typeof schema.calls.$inferSelect;
 type ParticipantRow = typeof schema.callParticipants.$inferSelect;
@@ -122,6 +127,7 @@ export async function startCall(
 			startedBy: who.user.id,
 			startedAt: now
 		});
+	await startAutoRecording(env, { id, startedBy: who.user.id }, now);
 	await publish(env, placeTopic(place), { type: 'call' });
 	return id;
 }
@@ -319,8 +325,8 @@ export async function setMedia(
 
 /**
  * A guest's browser saying it's still there, every few seconds, since guests have no
- * socket for the hub to see. Answers with who's in the call, which the guest's page has
- * no other way to hear about.
+ * socket for the hub to see. Answers with who's in the call and whether it is being
+ * recorded, which the guest's page has no other way to hear about.
  */
 export async function heartbeat(
 	env: Env,
@@ -332,7 +338,7 @@ export async function heartbeat(
 	const me = await ownParticipant(env, caller, call, participantId);
 	const { callParticipants: p } = schema;
 	await db(env).update(p).set({ seenAt: now }).where(eq(p.id, me.id));
-	return { participants: call.participants };
+	return { participants: call.participants, recorded: !!(await activeRecording(env, call.id)) };
 }
 
 /** Takes this person out of the call; the call ends when the last one leaves. */

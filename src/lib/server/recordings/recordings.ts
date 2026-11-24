@@ -7,6 +7,7 @@ import { publish } from '../realtime/publish';
 import { canWriteInProject, loadProject } from '../posts/access';
 import { isThreadMember } from '../chat/threads';
 import { aiConfigured } from '../ai/summaries';
+import { getOrg } from '../org';
 import type { SignedIn } from '../auth/session';
 import type { CallPlace } from '../calls/places';
 import * as sfu from '../calls/sfu';
@@ -110,8 +111,8 @@ async function assertCanRecord(env: Env, who: SignedIn, call: { place: CallPlace
 }
 
 /**
- * Starts recording a live call: everyone's microphone, and everyone who joins later, goes to
- * a sink through the SFU. Returns the running recording when there already is one.
+ * Starts recording a live call, by hand: only when the org lets people decide (Ask).
+ * Returns the running recording when there already is one.
  */
 export async function startRecording(
 	env: Env,
@@ -122,22 +123,51 @@ export async function startRecording(
 	if (!recordingAvailable(env)) error(404, strings.recording.errors.unavailable);
 	if (call.endedAt !== null) error(410, strings.errors.ended);
 	await assertCanRecord(env, who, call);
+	const { callRecording } = await getOrg(env);
+	if (callRecording !== 'ask') error(403, strings.recording.errors.notAsked(callRecording));
+	return openRecording(env, call.id, who.user.id, false, now);
+}
+
+/** Whether the org records every call from its start, and recording is set up to do it. */
+export async function recordsEveryCall(env: Env): Promise<boolean> {
+	return recordingAvailable(env) && (await getOrg(env)).callRecording === 'on';
+}
+
+/**
+ * Starts the recording the org's setting asks for, in a call that was just started: its
+ * starter is recorded as who started it, marked automatic.
+ */
+export async function startAutoRecording(
+	env: Env,
+	call: { id: string; startedBy: string },
+	now = Date.now()
+): Promise<void> {
+	if (await recordsEveryCall(env)) await openRecording(env, call.id, call.startedBy, true, now);
+}
+
+async function openRecording(
+	env: Env,
+	callId: string,
+	startedBy: string,
+	auto: boolean,
+	now: number
+): Promise<string> {
 	const [created] = await db(env)
 		.insert(schema.callRecordings)
-		.values({ id: newId(now), callId: call.id, startedBy: who.user.id, startedAt: now })
+		.values({ id: newId(now), callId, startedBy, auto, startedAt: now })
 		.onConflictDoNothing()
 		.returning();
-	if (!created) return (await activeRecording(env, call.id))!.id;
-	const opened = await syncRecording(env, call.id, now);
+	if (!created) return (await activeRecording(env, callId))!.id;
+	const opened = await syncRecording(env, callId, now);
 	if (opened.tried > 0 && opened.ok === 0) {
 		await db(env).delete(schema.callRecordings).where(eq(schema.callRecordings.id, created.id));
 		error(502, strings.recording.errors.sfuRefused);
 	}
-	await publish(env, `call:${call.id}`, { type: 'recording' });
+	await publish(env, `call:${callId}`, { type: 'recording' });
 	return created.id;
 }
 
-/** Stops the call's running recording, for someone who may record in its place. */
+/** Stops the call's running recording, for someone who may record in its place. With On, nobody may: every call records. */
 export async function stopRecording(
 	env: Env,
 	who: SignedIn,
@@ -145,6 +175,7 @@ export async function stopRecording(
 	now = Date.now()
 ): Promise<void> {
 	await assertCanRecord(env, who, call);
+	if ((await getOrg(env)).callRecording === 'on') error(403, strings.recording.errors.alwaysOn);
 	await endRecording(env, call.id, now);
 }
 

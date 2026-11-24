@@ -3,6 +3,7 @@
 	import SignedOutPage from '#lib/components/shell/SignedOutPage.svelte';
 	import SuedeButton from '#lib/components/ui/SuedeButton.svelte';
 	import { auth } from '#lib/strings/auth.js';
+	import { legal } from '#lib/strings/legal.js';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -39,4 +40,8 @@
 			</div>
 		{/if}
 	{/if}
+	<p>
+		<a href={resolve('/privacy')}>{legal.footer.privacy}</a> ·
+		<a href={resolve('/terms')}>{legal.footer.terms}</a>
+	</p>
 </SignedOutPage>

@@ -453,6 +453,7 @@
 					{@const comment = item.comment}
 					<CommentThread
 						{comment}
+						quiet
 						reactions={data.reactions}
 						viewerId={data.viewerId}
 						isAdmin={data.isAdmin || data.isAuthor}
@@ -503,9 +504,19 @@
 		flex-direction: column;
 		gap: var(--gap-lg);
 		inline-size: 100%;
-		max-inline-size: calc(44rem + 2 * var(--gap-lg));
+		max-inline-size: calc(var(--page-doc) + 2 * var(--gap-lg));
 		margin-inline: auto;
 		padding: 1.25rem var(--gap-lg) var(--gap-3xl);
+		container-type: inline-size;
+	}
+
+	/* The title, the people line and the summary sit on the text's column, 40rem as the line is
+	   at 16px (an em here would follow each one's own type size); the body is the page's width so
+	   its wide blocks can use it. */
+	.doc > :global(:not(.body)) {
+		inline-size: 100%;
+		max-inline-size: 40rem;
+		margin-inline: auto;
 	}
 
 	@media (min-width: 48rem) {
@@ -575,7 +586,8 @@
 		position: sticky;
 		inset-block-start: var(--header-h);
 		z-index: 1;
-		margin-inline: -0.375rem;
+		max-inline-size: 40rem;
+		margin-inline: auto;
 		padding: var(--gap-xs) 0;
 		border-block-end: 0;
 		background-color: var(--hue-z0-bg);
@@ -601,7 +613,6 @@
 	.comments {
 		flex: 1;
 		border-block-start: var(--border-w-hairline) solid var(--hue-z0-border);
-		background-color: light-dark(var(--hue-z1-bg), var(--hue-z0-bg));
 	}
 
 	.comments-column {
@@ -609,7 +620,7 @@
 		flex-direction: column;
 		gap: var(--gap-md);
 		inline-size: 100%;
-		max-inline-size: calc(44rem + 2 * var(--gap-lg));
+		max-inline-size: calc(40rem + 2 * var(--gap-lg));
 		margin-inline: auto;
 		padding: var(--gap-lg) var(--gap-lg) var(--gap-3xl);
 	}
