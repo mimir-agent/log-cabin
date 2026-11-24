@@ -45,6 +45,8 @@ export const notifications = sqliteTable('notifications', {
 	summary: text('summary'),
 	/** A reaction's emoji, for the inbox row's badge. */
 	emoji: text('emoji'),
+	/** "<prefix>: <excerpt>" under the sentence in push and mail (0043_notification_preview.sql). */
+	preview: text('preview'),
 	source: text('source').notNull(),
 	createdAt: integer('created_at').notNull(),
 	readAt: integer('read_at'),

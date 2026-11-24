@@ -14,13 +14,13 @@ function notification(
 	userId: string,
 	kind: string,
 	createdAt: number,
-	{ readAt = null as number | null, itemKey = `item:${id}` } = {}
+	{ readAt = null as number | null, itemKey = `item:${id}`, preview = null as string | null } = {}
 ) {
 	w.sqlite
 		.prepare(
-			"INSERT INTO notifications (id, user_id, actor_id, kind, item_key, url, source, created_at, read_at) VALUES (?, ?, 'ada', ?, ?, '/posts/p1', ?, ?, ?)"
+			"INSERT INTO notifications (id, user_id, actor_id, kind, item_key, url, source, created_at, read_at, preview) VALUES (?, ?, 'ada', ?, ?, '/posts/p1', ?, ?, ?, ?)"
 		)
-		.run(id, userId, kind, itemKey, `src:${id}`, createdAt, readAt);
+		.run(id, userId, kind, itemKey, `src:${id}`, createdAt, readAt, preview);
 }
 
 function mail(w: ReturnType<typeof notificationWorld>) {
@@ -48,6 +48,15 @@ describe('unread notification emails', () => {
 		expect(sent[0].text_body).toContain('ada sent you a message');
 		expect(sent[0].text_body).toMatchSnapshot('text');
 		expect(sent[0].html_body).toMatchSnapshot('html');
+	});
+
+	it('quotes the stored preview under the sentence', async () => {
+		const w = notificationWorld();
+		w.person('ada');
+		w.person('bo');
+		notification(w, 'n1', 'bo', 'mention', now - 11 * minute, { preview: 'Ada: see the plan' });
+		await cron(w.env, '*/5 * * * *', now);
+		expect(mail(w)[0].text_body).toContain('- ada mentioned you: “Ada: see the plan”\n');
 	});
 
 	it('waits until a notification is 10 minutes old, and skips it once read', async () => {

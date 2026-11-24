@@ -32,8 +32,15 @@ test('earlier messages load 20 at a time as the top comes into view, with none m
 		Array.from({ length: 20 }, (_, i) => crew.messageCount - 19 + i)
 	);
 
+	// The first load keeps the reader on the message they were on, instead of leaving them at the top.
+	const readerId = await bubbles(page).first().getAttribute('id');
+	await page.evaluate(() => scrollTo(0, 0));
+	await expect(bubbles(page)).toHaveCount(40);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+	await expect(page.locator(`#${readerId}`)).toBeInViewport();
+
 	// Each time the top is reached, the next 20 arrive, until the first message is there.
-	for (let pages = 2; pages <= crew.messageCount / 20; pages++) {
+	for (let pages = 3; pages <= crew.messageCount / 20; pages++) {
 		await page.evaluate(() => scrollTo(0, 0));
 		await expect(bubbles(page)).toHaveCount(pages * 20);
 	}

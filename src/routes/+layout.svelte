@@ -13,9 +13,10 @@
 	import '#lib/install-prompt.svelte.js';
 	import mark from '#lib/assets/mark.svg';
 	import { pageBackground } from '#lib/pwa.js';
-	import { invalidate, invalidateAll, pushState } from '$app/navigation';
+	import { goto, invalidate, invalidateAll, pushState } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
+	import { showInTab, type NewNotification } from '#lib/in-tab-notification.js';
 	import { subscribe } from '#lib/realtime.js';
 	import { trackKeyboard } from '#lib/editor/keyboard.js';
 	import { zoneCookie, zoneToFollow } from '#lib/time-zone.js';
@@ -112,6 +113,10 @@
 		if (!userId) return;
 		return subscribe(`user:${userId}`, (payload) => {
 			if (payload.type === 'inbox.unread') unread = payload.count as number;
+			if (payload.type === 'new-notification') {
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- the server built the path
+				showInTab(payload as unknown as NewNotification, (url) => goto(url));
+			}
 			if (payload.type === 'chat.threads') invalidate('chat:threads');
 			if (payload.type === 'call.ring') invalidate('calls:ringing');
 			// The socket was down for a while: reload the page from the database to catch up.

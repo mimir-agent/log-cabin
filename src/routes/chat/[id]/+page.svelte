@@ -273,7 +273,9 @@
 		const observer = new IntersectionObserver(async ([entry]) => {
 			if (!entry.isIntersecting) return;
 			observer.disconnect();
-			const anchor = top!.nextElementSibling;
+			// A message, not the sibling after the sentinel: that is the first row's date divider, and it
+			// goes when the older page lands, which would leave the reader at the top and the next page loading.
+			const anchor = top!.parentElement!.querySelector('[id^="message-"]');
 			const before = anchor?.getBoundingClientRect().top ?? 0;
 			const older = `${resolve('/chat/[id]', { id: thread.id })}?from=${from}`;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- the path is resolved; ?from is its query

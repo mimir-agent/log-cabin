@@ -24,6 +24,7 @@ import { feedbackItemKey } from '../posts/feedback';
 import { publish } from '../realtime/publish';
 import { sendPush } from '../push/webpush';
 import { notifications as strings } from '../../strings/notifications';
+import { pushPayload } from './preview';
 import { summarize, type Facts } from './summary';
 import { getSettings } from './settings';
 import { isQuiet, quietNow, quietRules } from './quiet';
@@ -38,6 +39,8 @@ export type NewNotification = {
 	title: string | null;
 	/** What the sentence is about; null for the kinds with none of their own (messages, calls, join requests). */
 	facts: Facts | null;
+	/** What push and mail quote under the sentence (preview.ts); none for a kind with no body. */
+	preview?: string | null;
 	/** The event behind it; a person is notified once per source, so retries are safe. */
 	source: string;
 };
@@ -107,6 +110,7 @@ export async function notify(
 	const summary = facts && summarize(actor!.name, facts);
 	const title = summary ?? strings.line(actor!.name, notification.kind, notification.itemKey);
 	const notified: string[] = [];
+	const quiet = new Set<string>();
 	const rules = await quietRules(
 		env,
 		active.map((row) => row.userId)
@@ -130,6 +134,7 @@ export async function notify(
 			.onConflictDoNothing()
 			.returning({ id: notifications.id });
 		if (inserted.length) notified.push(userId);
+		if (held) quiet.add(userId);
 	}
 	if (notified.length === 0) return [];
 
@@ -138,8 +143,17 @@ export async function notify(
 	const pushFailures: string[] = [];
 	for (const userId of notified) {
 		const unread = await unreadCount(env, userId);
+		const payload = pushPayload(notification, title, unread);
+		// A reaction or a notification made in quiet hours doesn't interrupt an open tab either.
+		if (notification.kind !== 'reaction' && !quiet.has(userId)) {
+			await publish(env, userTopic(userId), {
+				type: 'new-notification',
+				title: payload.title,
+				body: payload.body,
+				url: payload.url
+			});
+		}
 		await publish(env, userTopic(userId), { type: 'inbox.unread', count: unread });
-		const payload = { title, body: notification.title, url: notification.url, unread };
 		pushFailures.push(
 			...(await pushTo(env, userId, notification.kind, payload, now, { anyway })).failures
 		);

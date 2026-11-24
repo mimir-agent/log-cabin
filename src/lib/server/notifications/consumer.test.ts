@@ -508,7 +508,7 @@ describe('the JOBS consumer turns events into notifications', () => {
 			sharedWith: ['bo'],
 			authorId: 'ada'
 		});
-		expect(w.published).toEqual([
+		expect(w.published.filter((p) => p.payload.type === 'inbox.unread')).toEqual([
 			{ topic: 'user:bo', payload: { type: 'inbox.unread', count: 1 } },
 			{ topic: 'user:bo', payload: { type: 'inbox.unread', count: 2 } }
 		]);
@@ -661,7 +661,9 @@ describe('web push from the consumer', () => {
 		};
 		await consumeJobs({ messages: [message] } as unknown as MessageBatch<JobMessage>, w.env);
 		expect(fetch.mock.calls.map(([url]) => url)).toContain('https://push.example.net/sub/fine');
-		expect(w.published.map((p) => p.topic)).toEqual(['user:bo', 'user:cy']);
+		expect(
+			w.published.filter((p) => p.payload.type === 'inbox.unread').map((p) => p.topic)
+		).toEqual(['user:bo', 'user:cy']);
 		const log = w.sqlite.prepare('SELECT status, error FROM job_log').all() as { error: string }[];
 		expect(log).toEqual([expect.objectContaining({ status: 'failed' })]);
 		expect(log[0].error).toContain('expected 2xx, got 500');

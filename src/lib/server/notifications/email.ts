@@ -33,6 +33,7 @@ type Row = {
 	itemKey: string;
 	url: string;
 	title: string | null;
+	preview: string | null;
 };
 
 /** A list of notifications as an email: what happened, a button to the inbox, and how to stop. */
@@ -46,7 +47,7 @@ async function notificationsEmail(env: Env, subject: string, intro: string, rows
 				{
 					items: rows.map((row) => ({
 						line: strings.line(row.actorName, row.kind, row.itemKey),
-						detail: row.title,
+						detail: row.preview ?? row.title,
 						url: `${base}${row.url}`
 					}))
 				},
@@ -72,6 +73,7 @@ export async function emailUnread(env: Env, now: number): Promise<void> {
 			itemKey: notifications.itemKey,
 			url: notifications.url,
 			title: notifications.title,
+			preview: notifications.preview,
 			email: users.email,
 			actorName
 		})

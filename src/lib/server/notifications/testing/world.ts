@@ -7,7 +7,7 @@ import type { BodyInput } from '../../posts/posts';
 import { fakeD1 } from '../../testing/fake-d1';
 import { useTestEnv } from '../../testing/env';
 
-export type Published = { topic: string; payload: unknown };
+export type Published = { topic: string; payload: { type: string } };
 
 /**
  * An env for notification tests: the real migrations, a JOBS binding that keeps what is
@@ -104,19 +104,25 @@ function seeders(sqlite: DatabaseSync) {
 				sqlite.prepare('INSERT INTO project_favorites VALUES (?, ?, 0)').run(id, userId);
 			}
 		},
-		post(id: string, projectId: string, authorId: string) {
+		post(id: string, projectId: string, authorId: string, bodyText = '') {
 			sqlite
 				.prepare(
-					"INSERT INTO posts (id, project_id, author_id, title, body, body_text, created_at, last_activity_at) VALUES (?, ?, ?, 'T', '{}', '', 0, 0)"
+					"INSERT INTO posts (id, project_id, author_id, title, body, body_text, created_at, last_activity_at) VALUES (?, ?, ?, 'T', '{}', ?, 0, 0)"
 				)
-				.run(id, projectId, authorId);
+				.run(id, projectId, authorId, bodyText);
 		},
-		comment(id: string, postId: string, authorId: string, parentId: string | null = null) {
+		comment(
+			id: string,
+			postId: string,
+			authorId: string,
+			parentId: string | null = null,
+			bodyText = ''
+		) {
 			sqlite
 				.prepare(
-					"INSERT INTO comments (id, post_id, parent_id, author_id, body, body_text, created_at) VALUES (?, ?, ?, ?, '{}', '', 0)"
+					"INSERT INTO comments (id, post_id, parent_id, author_id, body, body_text, created_at) VALUES (?, ?, ?, ?, '{}', ?, 0)"
 				)
-				.run(id, postId, parentId, authorId);
+				.run(id, postId, parentId, authorId, bodyText);
 		},
 		note(id: string, authorId: string, sharedWith: string[] = []) {
 			sqlite
@@ -144,16 +150,30 @@ function seeders(sqlite: DatabaseSync) {
 			}
 		},
 		/** A message in a thread; `body` is its document, plain text by default. */
-		message(id: string, threadId: string, authorId: string, body?: unknown, replyToId?: string) {
+		message(
+			id: string,
+			threadId: string,
+			authorId: string,
+			body?: unknown,
+			replyToId?: string,
+			bodyText = 'Hi'
+		) {
 			const doc = body ?? {
 				type: 'doc',
 				content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hi' }] }]
 			};
 			sqlite
 				.prepare(
-					"INSERT INTO messages (id, thread_id, author_id, reply_to_id, body, body_text, created_at) VALUES (?, ?, ?, ?, ?, '', 0)"
+					'INSERT INTO messages (id, thread_id, author_id, reply_to_id, body, body_text, created_at) VALUES (?, ?, ?, ?, ?, ?, 0)'
 				)
-				.run(id, threadId, authorId, replyToId ?? null, JSON.stringify(doc));
+				.run(id, threadId, authorId, replyToId ?? null, JSON.stringify(doc), bodyText);
+		},
+		/** What each of a person's notifications quotes under its sentence. */
+		previewsFor(userId: string) {
+			return sqlite
+				.prepare('SELECT preview FROM notifications WHERE user_id = ? ORDER BY created_at, id')
+				.all(userId)
+				.map((row) => (row as { preview: string | null }).preview);
 		},
 		notificationsFor(userId: string) {
 			return sqlite

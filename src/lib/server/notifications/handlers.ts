@@ -4,7 +4,7 @@ import { db, schema } from '../db';
 import { canSeeProject } from '../posts/access';
 import { feedbackItemKey } from '../posts/feedback';
 import { noteAccess, noteFacts } from '../notes/access';
-import { docMentions } from '../../editor/doc';
+import { docAttachments, docMentions } from '../../editor/doc';
 import { notes as noteStrings } from '../../strings/notes';
 import { notifications as noticeStrings } from '../../strings/notifications';
 import type { ContentKind, DomainEventKind, JobMessage } from '../events';
@@ -16,6 +16,7 @@ import {
 	reactionsItemKey,
 	type NewNotification
 } from './notify';
+import { bodyPreview, messagePreview } from './preview';
 import type { Facts } from './summary';
 
 export type HandlerFor<K extends DomainEventKind> = (
@@ -98,7 +99,12 @@ async function postSubscribers(env: Env, postId: string): Promise<string[]> {
 function loadPost(env: Env, postId: string) {
 	const { posts } = schema;
 	return db(env)
-		.select({ projectId: posts.projectId, authorId: posts.authorId, title: posts.title })
+		.select({
+			projectId: posts.projectId,
+			authorId: posts.authorId,
+			title: posts.title,
+			bodyText: posts.bodyText
+		})
 		.from(posts)
 		.where(eq(posts.id, postId))
 		.get();
@@ -112,6 +118,7 @@ function loadComment(env: Env, commentId: string) {
 		.select({
 			postId: comments.postId,
 			authorId: comments.authorId,
+			bodyText: comments.bodyText,
 			parentAuthorId: parent.authorId,
 			projectId: posts.projectId,
 			postTitle: posts.title,
@@ -127,7 +134,7 @@ function loadComment(env: Env, commentId: string) {
 function loadNote(env: Env, noteId: string) {
 	const { notes } = schema;
 	return db(env)
-		.select({ authorId: notes.authorId, title: notes.title })
+		.select({ authorId: notes.authorId, title: notes.title, bodyText: notes.bodyText })
 		.from(notes)
 		.where(eq(notes.id, noteId))
 		.get();
@@ -143,6 +150,9 @@ async function reactionEmoji(env: Env, subjectType: ContentKind, reactionId: str
 		.get();
 	return row?.emoji;
 }
+
+const mentionPrefix = async (env: Env, authorId: string) =>
+	noticeStrings.bodyPreview.mentioned(await nameOf(env, authorId));
 
 const postUrl = (postId: string) => `/posts/${postId}`;
 const commentUrl = (postId: string, commentId: string) => `/posts/${postId}#comment-${commentId}`;
@@ -223,6 +233,7 @@ export const notificationHandlers: Handlers = {
 					itemKey: `post:${event.subjectId}`,
 					title: post.title,
 					facts: { about: 'mention', in: 'post', title: await postTitled(env, post) },
+					preview: bodyPreview(await mentionPrefix(env, event.authorId), post.bodyText),
 					url: postUrl(event.subjectId),
 					source
 				});
@@ -237,6 +248,7 @@ export const notificationHandlers: Handlers = {
 					itemKey: `post:${comment.postId}`,
 					title: comment.postTitle,
 					facts: { about: 'mention', in: comment.parentAuthorId ? 'reply' : 'comment' },
+					preview: bodyPreview(await mentionPrefix(env, event.authorId), comment.bodyText),
 					url: commentUrl(comment.postId, event.subjectId),
 					source
 				});
@@ -251,6 +263,7 @@ export const notificationHandlers: Handlers = {
 					itemKey: `note:${event.subjectId}`,
 					title: note.title,
 					facts: { about: 'mention', in: 'note', title: await noteTitled(env, note) },
+					preview: bodyPreview(await mentionPrefix(env, event.authorId), note.bodyText),
 					url: `/notes/${event.subjectId}`,
 					source
 				});
@@ -270,7 +283,8 @@ export const notificationHandlers: Handlers = {
 			itemKey: `post:${comment.postId}`,
 			title: comment.postTitle,
 			url: commentUrl(comment.postId, event.commentId),
-			source: `comment.created:${event.commentId}`
+			source: `comment.created:${event.commentId}`,
+			preview: bodyPreview(await nameOf(env, event.authorId), comment.bodyText)
 		};
 		// Replies first: someone who wrote both the post and the parent comment is told once, as a reply.
 		const subscribers = await postSubscribers(env, comment.postId);
@@ -396,6 +410,10 @@ export const notificationHandlers: Handlers = {
 			itemKey: `post:${event.postId}`,
 			title: post.title,
 			facts: { about: 'post', channel: await loadProject(env, event.projectId) },
+			preview: bodyPreview(
+				noticeStrings.bodyPreview.posted(await nameOf(env, event.authorId)),
+				post.bodyText
+			),
 			url: postUrl(event.postId),
 			source: `post.created:${event.postId}`
 		});
@@ -418,7 +436,7 @@ export const notificationHandlers: Handlers = {
 	async 'note.commented'(env, event) {
 		const { members, noteComments, noteSubscriptions, notes } = schema;
 		const found = await db(env)
-			.select({ note: notes, body: noteComments.body })
+			.select({ note: notes, body: noteComments.body, bodyText: noteComments.bodyText })
 			.from(noteComments)
 			.innerJoin(notes, eq(notes.id, noteComments.noteId))
 			.where(eq(noteComments.id, event.commentId))
@@ -443,27 +461,32 @@ export const notificationHandlers: Handlers = {
 			itemKey: `note:${event.noteId}`,
 			title: found.note.title || noteStrings.editor.titlePlaceholder,
 			facts: { about: 'comment', title: await noteTitled(env, found.note) },
+			preview: bodyPreview(await nameOf(env, event.authorId), found.bodyText),
 			url: `/notes/${event.noteId}#comment-${event.commentId}`,
 			source: `note-comment:${event.commentId}`
 		});
 	},
 
 	async 'message.created'(env, event) {
-		const { messages, chatThreadMembers: m } = schema;
+		const { messages, chatThreads, chatThreadMembers: m } = schema;
 		const parent = alias(messages, 'parent');
 		const message = await db(env)
 			.select({
 				body: messages.body,
+				bodyText: messages.bodyText,
 				deletedAt: messages.deletedAt,
+				direct: sql<number>`${chatThreads.dmKey} IS NOT NULL`,
 				replyToAuthorId: parent.authorId
 			})
 			.from(messages)
+			.innerJoin(chatThreads, eq(chatThreads.id, messages.threadId))
 			.leftJoin(parent, eq(parent.id, messages.replyToId))
 			.where(eq(messages.id, event.messageId))
 			.get();
 		// Deleted before the job ran, alone or with its whole thread: there's nothing to tell.
 		if (!message || message.deletedAt !== null) return;
-		const mentioned = new Set(docMentions(JSON.parse(message.body)));
+		const doc = JSON.parse(message.body);
+		const mentioned = new Set(docMentions(doc));
 		// Each member's level for this thread (Campsite's message.rb): "mentions" hears only a
 		// mention of them or a reply to them, "none" nothing. Someone removed since has no row.
 		const levels = new Map(
@@ -490,6 +513,11 @@ export const notificationHandlers: Handlers = {
 				itemKey: `thread:${event.threadId}`,
 				title: readThreadNaming(row!.naming).name,
 				facts: null,
+				preview: messagePreview(
+					await nameOf(env, event.authorId),
+					{ bodyText: message.bodyText, hasAttachment: docAttachments(doc).length > 0 },
+					!!message.direct
+				),
 				url: `/chat/${event.threadId}`,
 				source: `message.created:${event.messageId}`
 			});
