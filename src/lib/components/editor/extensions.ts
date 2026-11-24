@@ -12,7 +12,11 @@ import {
 	type MentionSuggestion,
 	type ResourceItem
 } from '#lib/editor/extensions.js';
-import { applySlash, filterSlash, slashMatch, type SlashItem } from '#lib/editor/slash.js';
+import { applySlash, filterSlash, triggerMatch, type SlashItem } from '#lib/editor/slash.js';
+import { emojiMatch, emojiNamed, filterEmoji, loadEmoji } from '#lib/editor/emoji.js';
+import type { PickerEmoji } from '#lib/emoji/data.js';
+import type { OrgEmoji } from '#lib/emoji/picker.js';
+import EmojiMenu from './EmojiMenu.svelte';
 import MentionList from './MentionList.svelte';
 import SlashMenu from './SlashMenu.svelte';
 import { MarkdownPaste } from './markdown-paste.js';
@@ -21,6 +25,7 @@ import { EditableRelativeTime } from './time-chip.js';
 
 export type { Member, MentionItem, ResourceItem };
 const slashKey = new PluginKey('slash');
+const emojiKey = new PluginKey('emoji');
 
 /** The notes, posts and calls matching what was typed after @ that this person may see. */
 export async function findResources(query: string): Promise<ResourceItem[]> {
@@ -73,7 +78,7 @@ export function mentionSuggestion(
  * mentionSuggestion's list goes. Add it after chatKeys, like the mention list, so its Enter and
  * Tab come first.
  */
-export function slashMenu(inserts: () => SlashItem[] = () => []): AnyExtension {
+export function slashMenu(items: () => SlashItem[]): AnyExtension {
 	return Extension.create({
 		name: 'slashMenu',
 		addProseMirrorPlugins() {
@@ -82,8 +87,8 @@ export function slashMenu(inserts: () => SlashItem[] = () => []): AnyExtension {
 					editor: this.editor,
 					pluginKey: slashKey,
 					char: '/',
-					findSuggestionMatch: slashMatch,
-					items: ({ query }) => filterSlash(query, inserts()),
+					findSuggestionMatch: triggerMatch,
+					items: ({ query }) => filterSlash(query, items()),
 					command: ({ editor, range, props }) => applySlash(editor, range, props),
 					render: suggestionRender<SlashItem, SlashItem>({
 						mount: (target, props, onselect) =>
@@ -92,6 +97,55 @@ export function slashMenu(inserts: () => SlashItem[] = () => []): AnyExtension {
 								props: {
 									onselect,
 									onclose: () => exitSuggestion(props.editor.view, slashKey)
+								}
+							}),
+						pick: (props, item) => props.command(item)
+					})
+				})
+			];
+		}
+	});
+}
+
+/**
+ * The `:` list: two characters after it, the standard emoji and the org's own whose name or
+ * keywords match, in an EmojiMenu mounted where the others go. Picking one puts its character,
+ * or `:name:` for an org emoji, in place of what was typed; typing a standard emoji's whole
+ * `:name:` does that straight away. Add it after chatKeys, like the others, so its Enter and Tab
+ * come first.
+ */
+export function emojiMenu(org: () => OrgEmoji): AnyExtension {
+	return Extension.create({
+		name: 'emojiMenu',
+		addInputRules: () => [
+			new InputRule({
+				find: /(?:^|\s):([^\s:]+):$/,
+				handler: ({ state, range, match }) => {
+					const emoji = emojiNamed(match[1]);
+					// An org emoji of that name is drawn from the text as typed, over a standard one.
+					if (!emoji || match[1] in org().custom) return null;
+					// The range ends after the closing colon, which is already in the document.
+					state.tr.insertText(emoji, range.to - match[1].length - 2, range.to);
+				}
+			})
+		],
+		addProseMirrorPlugins() {
+			return [
+				Suggestion<PickerEmoji, PickerEmoji>({
+					editor: this.editor,
+					pluginKey: emojiKey,
+					char: ':',
+					findSuggestionMatch: emojiMatch,
+					items: async ({ query }) => filterEmoji(query, await loadEmoji(), org()),
+					command: ({ editor, range, props }) =>
+						editor.chain().focus().insertContentAt(range, props.value).run(),
+					render: suggestionRender<PickerEmoji, PickerEmoji>({
+						mount: (target, props, onselect) =>
+							mount(EmojiMenu, {
+								target,
+								props: {
+									onselect,
+									onclose: () => exitSuggestion(props.editor.view, emojiKey)
 								}
 							}),
 						pick: (props, item) => props.command(item)

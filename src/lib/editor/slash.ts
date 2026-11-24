@@ -22,8 +22,8 @@ export type SlashItem = {
 	aliases: string[];
 } & (
 	| Block
-	/** An insert that isn't a block (a file chooser): runs once the typed text is gone. */
-	| { act: () => void }
+	/** An action that isn't a block (a file chooser, an `@`): runs once the typed text is gone. */
+	| { act: (editor: Editor) => void }
 );
 
 const listKinds = ['bulletList', 'orderedList', 'taskList'];
@@ -52,15 +52,61 @@ const blocks = {
 	}
 } satisfies Record<string, Block>;
 
-/** In the order the menu lists them. */
-export const slashItems: SlashItem[] = (Object.keys(blocks) as (keyof typeof blocks)[]).map(
-	(id) => ({ ...text.slash[id], ...blocks[id] })
-);
+/** What each kind of box lists: the full document menu, the comment box's, and chat's. */
+export type SlashSurface = 'document' | 'comment' | 'chat';
 
-/** The items whose label or an alias contains what was typed after `/`, in order: the blocks, then `inserts`. */
-export function filterSlash(query: string, inserts: SlashItem[] = []): SlashItem[] {
+/** The block items a surface lists, in order. */
+const surfaceBlocks: Record<SlashSurface, (keyof typeof blocks)[]> = {
+	document: Object.keys(blocks) as (keyof typeof blocks)[],
+	comment: (Object.keys(blocks) as (keyof typeof blocks)[]).filter((id) => id !== 'time'),
+	chat: ['bulletList', 'orderedList', 'quote', 'codeBlock']
+};
+
+/** What only the box that mounts the menu can do. */
+export type SlashActions = {
+	/** Opens the file chooser; absent where the box takes no attachments. */
+	file?: () => void;
+	/** Opens the emoji picker. */
+	emoji?: () => void;
+	/** The link to the writer's personal call room; absent for a guest, who has none. */
+	room?: string;
+};
+
+/**
+ * The items a surface lists, in order: its blocks, then Image or file, Mention someone, Call
+ * link and Emoji where the box and the writer can do them. The comment box has no Call link.
+ */
+export function slashItems(
+	surface: SlashSurface,
+	{ file, emoji, room }: SlashActions
+): SlashItem[] {
+	const { slash } = text;
+	const callLink = (editor: Editor) =>
+		editor
+			.chain()
+			.focus()
+			.insertContent([
+				{
+					type: 'text',
+					text: slash.callLink.label,
+					marks: [{ type: 'link', attrs: { href: room } }]
+				},
+				{ type: 'text', text: ' ' }
+			])
+			.run();
+	return [
+		...surfaceBlocks[surface].map((id) => ({ ...slash[id], ...blocks[id] })),
+		...(file ? [{ ...slash.file, act: file }] : []),
+		{ ...slash.mention, act: (editor: Editor) => editor.chain().focus().insertContent('@').run() },
+		...(room && surface !== 'comment' ? [{ ...slash.callLink, act: callLink }] : []),
+		...(emoji ? [{ ...slash.emoji, act: emoji }] : [])
+	];
+}
+
+/** The items whose label or an alias contains what was typed after `/`, in order. */
+export function filterSlash(query: string, items: SlashItem[]): SlashItem[] {
 	const typed = query.toLowerCase();
-	return [...slashItems, ...inserts].filter(
+	return items.filter(
 		(item) =>
 			item.label.toLowerCase().includes(typed) ||
 			item.aliases.some((alias) => alias.includes(typed))
@@ -68,13 +114,13 @@ export function filterSlash(query: string, inserts: SlashItem[] = []): SlashItem
 }
 
 /**
- * Where `/` opens the menu: at the start of a block or after a space, and never in code. The
- * query ends at the first space, so typing one closes the menu. Tiptap's own match finds a
- * prefix in the text node before the caret, which a mark splits (bold text then `/` leaves a
- * node that is just the `/`), so the character before the `/` is read from the block. A line
- * break reads as nothing, like the start of a block.
+ * Where a trigger character (`/`, `:`) opens its list: at the start of a block or after a space,
+ * and never in code. The query ends at the first space, so typing one closes the list. Tiptap's
+ * own match finds a prefix in the text node before the caret, which a mark splits (bold text then
+ * `/` leaves a node that is just the `/`), so the character before the trigger is read from the
+ * block. A line break reads as nothing, like the start of a block.
  */
-export const slashMatch: typeof findSuggestionMatch = (trigger) => {
+export const triggerMatch: typeof findSuggestionMatch = (trigger) => {
 	const { $position } = trigger;
 	const inCode =
 		$position.parent.type.spec.code || $position.marks().some((mark) => mark.type.spec.code);
@@ -101,7 +147,7 @@ export function applySlash(editor: Editor, range: Range, item: SlashItem) {
 	const chain = editor.chain().focus().deleteRange(range);
 	if ('act' in item) {
 		chain.run();
-		item.act();
+		item.act(editor);
 		return;
 	}
 	if (item.isIn?.(editor)) {

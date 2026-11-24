@@ -30,7 +30,7 @@ async function type(text: string) {
 describe('the / menu', () => {
 	it('opens on / in a note and in a post box, and /h2 then Enter makes a Heading 2 without the typed text', async () => {
 		for (const kind of [{ note: true }, { bubble: true }]) {
-			const { unmount } = render(Editor, { ...props, slash: true, ...kind });
+			const { unmount } = render(Editor, { ...props, slash: 'document', ...kind });
 			await type('/h2');
 			await expect.element(list()).toBeVisible();
 			await userEvent.keyboard('{Enter}');
@@ -58,7 +58,7 @@ describe('the / menu', () => {
 			['/toggle', 'details']
 		];
 		for (const [typed, type_, attrs] of blocks) {
-			const { unmount } = render(Editor, { ...props, slash: true, note: true });
+			const { unmount } = render(Editor, { ...props, slash: 'document', note: true });
 			await type(typed);
 			await userEvent.keyboard('{Enter}');
 			const first = saved().content[0];
@@ -69,7 +69,7 @@ describe('the / menu', () => {
 	});
 
 	it('offers Collapsible section in a post box too, and makes one', async () => {
-		render(Editor, { ...props, slash: true, bubble: true });
+		render(Editor, { ...props, slash: 'document', bubble: true });
 		await type('/');
 		await expect.element(option('Collapsible section')).toBeVisible();
 		await userEvent.keyboard('toggle{Enter}');
@@ -77,7 +77,7 @@ describe('the / menu', () => {
 	});
 
 	it('puts a time at the caret from /time, in the paragraph that holds the words before it', async () => {
-		render(Editor, { ...props, slash: true, bubble: true });
+		render(Editor, { ...props, slash: 'document', bubble: true });
 		await type('Call at /time');
 		await userEvent.keyboard('{Enter}');
 		const [first, ...rest] = saved().content[0].content;
@@ -88,10 +88,10 @@ describe('the / menu', () => {
 	});
 
 	it('moves with the arrow keys, wrapping', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('/');
 		const text = option('Text');
-		const last = option('Time');
+		const last = option('Mention someone');
 		await expect.element(text).toHaveAttribute('aria-selected', 'true');
 
 		await userEvent.keyboard('{ArrowUp}');
@@ -102,10 +102,10 @@ describe('the / menu', () => {
 	});
 
 	it('names the active option on the editor, and stops when it closes', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('/');
 		const text = option('Text');
-		const last = option('Time');
+		const last = option('Mention someone');
 		await expect.element(text).toBeVisible();
 		await expect.element(box()).toHaveAttribute('aria-activedescendant', text.element().id);
 
@@ -125,7 +125,7 @@ describe('the / menu', () => {
 		'leaves the list as it is when %s is picked in an item of that list',
 		async (_name, start, typed, kind) => {
 			for (const words of ['', 'Tents ']) {
-				const { unmount } = render(Editor, { ...props, slash: true, note: true });
+				const { unmount } = render(Editor, { ...props, slash: 'document', note: true });
 				await type(`${start}${words}`);
 				const before = saved();
 				expect(before.content[0].type, start).toBe(kind);
@@ -137,7 +137,7 @@ describe('the / menu', () => {
 	);
 
 	it('closes on Escape and leaves what was typed', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('/he');
 		await expect.element(list()).toBeVisible();
 		await userEvent.keyboard('{Escape}');
@@ -146,21 +146,21 @@ describe('the / menu', () => {
 	});
 
 	it('picks the item that is clicked', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('/');
 		await option('Heading 3').click();
 		expect(saved().content[0]).toEqual({ type: 'heading', attrs: { level: 3 } });
 	});
 
 	it('opens after a line break in a block', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('Intro');
 		await userEvent.keyboard('{Shift>}{Enter}{/Shift}/');
 		await expect.element(list()).toBeVisible();
 	});
 
 	it('puts the block below when the block already has text', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('Intro /quote');
 		await userEvent.keyboard('{Enter}');
 		// The editor keeps an empty paragraph after a last block that isn't one.
@@ -172,7 +172,7 @@ describe('the / menu', () => {
 	});
 
 	it('shows No results for text nothing matches, and a space closes it', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('/zzz');
 		await expect.element(page.getByText('No results')).toBeVisible();
 		await userEvent.keyboard(' ');
@@ -180,7 +180,7 @@ describe('the / menu', () => {
 	});
 
 	it('does not open in the middle of a word or in code', async () => {
-		render(Editor, { ...props, slash: true, note: true });
+		render(Editor, { ...props, slash: 'document', note: true });
 		await type('and/or');
 		await expect.element(list()).not.toBeInTheDocument();
 
@@ -196,7 +196,7 @@ describe('the / menu', () => {
 			setup: (host) => {
 				const editor = mount(Editor, {
 					target: host,
-					props: { ...props, slash: true, bubble: true }
+					props: { ...props, slash: 'document', bubble: true }
 				});
 				return () => unmount(editor);
 			}
@@ -218,7 +218,7 @@ describe('the / menu', () => {
 
 	it('takes Enter before chat’s send', async () => {
 		const send = vi.fn();
-		render(Editor, { ...props, compact: true, slash: true, onenter: send });
+		render(Editor, { ...props, compact: true, slash: 'document', onenter: send });
 		await type('/h2');
 		await userEvent.keyboard('{Enter}');
 		expect(send).not.toHaveBeenCalled();

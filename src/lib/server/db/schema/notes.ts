@@ -135,7 +135,14 @@ export const noteReactions = sqliteTable('note_reactions', {
 	createdAt: integer('created_at').notNull()
 });
 
-export const noteEventKinds = ['project', 'title', 'pinned', 'unpinned', 'referenced'] as const;
+export const noteEventKinds = [
+	'project',
+	'title',
+	'pinned',
+	'unpinned',
+	'referenced',
+	'posted'
+] as const;
 export type NoteEventKind = (typeof noteEventKinds)[number];
 export const noteRefTypes = ['post', 'note'] as const;
 export type NoteRefType = (typeof noteRefTypes)[number];

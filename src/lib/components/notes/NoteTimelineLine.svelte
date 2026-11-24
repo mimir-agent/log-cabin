@@ -15,6 +15,7 @@
 		title: 'pencil',
 		pinned: 'pin-tack',
 		unpinned: 'pin-tack',
+		posted: 'paper-airplane',
 		referenced: 'link'
 	};
 </script>

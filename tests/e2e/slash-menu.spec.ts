@@ -1,5 +1,5 @@
 // The `/` menu in the editors that hold a whole document (a new note, the post composer), on a
-// desktop and a phone, and its absence in the comment box and chat. Against the built Worker (serve.ts).
+// desktop and a phone. Against the built Worker (serve.ts).
 import {
 	devices,
 	expect,
@@ -10,7 +10,7 @@ import {
 	type Page
 } from '@playwright/test';
 import { editor } from '../../src/lib/strings/editor.ts';
-import { baseURL, crew, people, post, project } from './fixtures.ts';
+import { baseURL, people, project } from './fixtures.ts';
 
 const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = devices['iPhone 13'];
 const profiles: Record<string, { use: BrowserContextOptions; touch: boolean }> = {
@@ -115,7 +115,7 @@ for (const { name, path } of surfaces) {
 		const page = await open(browser, profiles.desktop.use, path);
 		await body(page).click();
 		await page.keyboard.type('/');
-		await expect(option(page, editor.slash.details.label)).toBeVisible();
+		await expect(option(page, editor.slash.emoji.label)).toBeVisible();
 		await page.context().close();
 	});
 
@@ -125,7 +125,7 @@ for (const { name, path } of surfaces) {
 		await page.keyboard.type('/');
 		await expect(option(page, editor.slash.text.label)).toHaveAttribute('aria-selected', 'true');
 		await page.keyboard.press('ArrowUp');
-		await expect(option(page, editor.slash.details.label)).toHaveAttribute('aria-selected', 'true');
+		await expect(option(page, editor.slash.emoji.label)).toHaveAttribute('aria-selected', 'true');
 		await page.keyboard.press('ArrowDown');
 		await expect(option(page, editor.slash.text.label)).toHaveAttribute('aria-selected', 'true');
 
@@ -136,21 +136,3 @@ for (const { name, path } of surfaces) {
 		await page.context().close();
 	});
 }
-
-test('in the comment box and in chat, / opens nothing', async ({ browser }) => {
-	const comment = await open(browser, profiles.desktop.use, `/posts/${post.id}`);
-	const box = comment.getByRole('textbox', { name: /^Write a comment/ });
-	await box.click();
-	await comment.keyboard.type('/');
-	await expect(box).toContainText('/');
-	await expect(menu(comment)).toBeHidden();
-	await comment.context().close();
-
-	const chat = await open(browser, profiles.desktop.use, `/chat/${crew.id}`);
-	const message = chat.getByRole('textbox', { name: /^Write a message/ });
-	await message.click();
-	await chat.keyboard.type('/');
-	await expect(message).toContainText('/');
-	await expect(menu(chat)).toBeHidden();
-	await chat.context().close();
-});

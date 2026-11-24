@@ -11,6 +11,21 @@ export type OrgEmoji = {
 	canAdd: boolean;
 };
 
+/** The org's own emoji as a section, each picked as the text `:name:`, which RichText draws as its image. */
+export function customSection(org: OrgEmoji): PickerSection {
+	return {
+		id: 'custom',
+		title: org.orgName,
+		items: Object.entries(org.custom).map(([name, url]) => ({
+			value: `:${name}:`,
+			name,
+			skinTones: false,
+			terms: name,
+			url
+		}))
+	};
+}
+
 const toneModifiers = ['', '🏻', '🏼', '🏽', '🏾', '🏿'];
 export const skinTones = toneModifiers.map((m, i) => ({ value: i, sample: i ? `✋${m}` : '✋' }));
 

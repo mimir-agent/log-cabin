@@ -177,6 +177,7 @@
 			compact
 			formatting={false}
 			attachIcon="plus"
+			slash="chat"
 			{value}
 			placeholder={chat.thread.placeholder}
 			{members}

@@ -124,6 +124,7 @@
 	/** The words the open form comments on, kept while the selection moves into the form. */
 	let commenting = $state<SelectedPassage | null>(null);
 	let formOpen = $state(false);
+	let shareOpen = $state(false);
 	const passageTools = $derived(commenting ?? selected);
 	let opened = $state.raw<{ commentId: string; words: HTMLElement } | null>(null);
 	let threadOpen = $state(false);
@@ -222,7 +223,7 @@
 		{#if live}<span class="faces"><NotePresence {live} {status} display="faces" /></span>{/if}
 		<NoteViewers {...data.viewers} />
 		{#if data.sharing}
-			<Popover align="end" width="22rem" label={notes.sharing.title}>
+			<Popover bind:open={shareOpen} align="end" width="22rem" label={notes.sharing.title}>
 				{#snippet trigger({ props })}
 					<!-- The label hides below 64rem, so the button names itself the same way. -->
 					<Button {...props} variant="ghost" aria-label={notes.sharing.addPersonSubmit}>
@@ -233,6 +234,9 @@
 				<NoteSharing
 					{...data.sharing}
 					viewerId={data.viewerId}
+					noteId={note.id}
+					noteTitle={title}
+					onsharepost={() => (shareOpen = false)}
 					project={{ id: note.projectId, permission: note.projectPermission }}
 				/>
 				<NotePublish url={data.publicUrl} allowed={data.publicLinks} />
@@ -340,7 +344,7 @@
 						<Editor
 							name="body"
 							checklists
-							slash
+							slash="document"
 							gallery
 							image={canvasImage}
 							live={liveExtensions(live, passages)}

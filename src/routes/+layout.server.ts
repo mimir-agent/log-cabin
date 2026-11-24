@@ -5,6 +5,7 @@ import { getOrg } from '#lib/server/org.js';
 import { getObjectUrl } from '#lib/server/storage.js';
 import { sidebarProjects } from '#lib/server/posts/projects.js';
 import { dropUnseenNoteFavorites, sidebarFavorites } from '#lib/server/favorites.js';
+import { roomPath } from '#lib/server/calls/rooms.js';
 import { ringingFor } from '#lib/server/calls/invitations.js';
 import { callsEnabled } from '#lib/server/calls/sfu.js';
 import { zoneCookie, zoneOf } from '#lib/time-zone.js';
@@ -31,6 +32,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 			memberZone: null,
 			// Signed out there is no org emoji to show: those pages have no reactions or picker.
 			orgEmoji: null,
+			roomPath: null,
 			people: [],
 			recent: [],
 			about: null,
@@ -85,6 +87,8 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		ringing,
 		timeZone,
 		memberZone,
+		// A guest has no personal room.
+		roomPath: member.role === 'guest' ? null : roomPath(user),
 		orgEmoji: {
 			custom: customEmoji,
 			orgName: org.name,

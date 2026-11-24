@@ -18,7 +18,7 @@ import {
 	shareWithPeople,
 	validateNoteInput
 } from './notes';
-import { listNoteEvents, type NoteTimelineEvent } from './timeline';
+import { listNoteEvents, recordNoteEvent, type NoteTimelineEvent } from './timeline';
 
 async function world() {
 	const { DB, sqlite } = fakeD1();
@@ -213,6 +213,24 @@ describe('recording what happens to a note', () => {
 			})
 		]);
 		expect(w.events(other), 'a note’s link to itself').toEqual([]);
+	});
+
+	it('shows a post that shared a note as one line, naming the sharer and the channel', async () => {
+		const w = await world();
+		const postId = await createPost(w.env, w.ada, w.open, {
+			title: 'Plan out',
+			...postBody(noteUrl(w.noteId))
+		});
+		await recordNoteEvent(w.env, w.noteId, w.ada.user.id, {
+			kind: 'posted',
+			projectId: w.open,
+			refType: 'post',
+			refId: postId
+		});
+		const seen = await listNoteEvents(w.env, w.ada, w.noteId);
+		expect(lines(seen), 'the post’s plain reference is left out beside it').toEqual([
+			'Ada posted Open'
+		]);
 	});
 });
 

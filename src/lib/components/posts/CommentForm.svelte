@@ -183,6 +183,7 @@
 				formatting={false}
 				toolbarLast
 				checklists
+				slash="comment"
 				value={draft}
 				{placeholder}
 				{members}

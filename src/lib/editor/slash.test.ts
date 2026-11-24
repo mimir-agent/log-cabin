@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'vitest';
 import type { Node } from '@tiptap/pm/model';
 import { documentSchema } from './extensions.js';
-import { filterSlash, slashItems, slashMatch } from './slash.js';
+import {
+	filterSlash,
+	slashItems,
+	triggerMatch,
+	type SlashActions,
+	type SlashSurface
+} from './slash.js';
 
 const schema = documentSchema();
 const text = (value: string, marks: string[] = []) =>
@@ -15,7 +21,7 @@ const codeBlock = (...content: Node[]) => schema.nodes.codeBlock.create(null, co
 /** What the menu finds when the caret is at the end of `block`: the typed query, or null. */
 function queryAtEnd(block: Node): string | null {
 	const doc = schema.node('doc', null, [block]);
-	const match = slashMatch({
+	const match = triggerMatch({
 		char: '/',
 		allowSpaces: false,
 		allowToIncludeChar: false,
@@ -26,7 +32,7 @@ function queryAtEnd(block: Node): string | null {
 	return match && match.query;
 }
 
-describe('slashMatch', () => {
+describe('triggerMatch', () => {
 	test('opens at the start of a block', () => {
 		expect(queryAtEnd(paragraph(text('/')))).toBe('');
 		expect(queryAtEnd(paragraph(text('/h2')))).toBe('h2');
@@ -63,11 +69,13 @@ describe('slashMatch', () => {
 	});
 });
 
-describe('filterSlash', () => {
-	const labels = (query: string) => filterSlash(query).map((item) => item.label);
+const all = { file: () => {}, emoji: () => {}, room: 'https://cabin.test/calls/room/ada' };
+const labelsOf = (surface: SlashSurface, actions: SlashActions = all) =>
+	slashItems(surface, actions).map((item) => item.label);
 
-	test('lists every item, in order, for an empty query', () => {
-		expect(labels('')).toEqual([
+describe('slashItems', () => {
+	test('a note or post lists every block, then the actions', () => {
+		expect(labelsOf('document')).toEqual([
 			'Text',
 			'Heading 1',
 			'Heading 2',
@@ -79,9 +87,62 @@ describe('filterSlash', () => {
 			'Code block',
 			'Divider',
 			'Collapsible section',
-			'Time'
+			'Time',
+			'Image or file',
+			'Mention someone',
+			'Call link',
+			'Emoji'
 		]);
-		expect(slashItems).toHaveLength(12);
+	});
+
+	test('the comment box lists the blocks and actions but no Time and no Call link', () => {
+		expect(labelsOf('comment')).toEqual([
+			'Text',
+			'Heading 1',
+			'Heading 2',
+			'Heading 3',
+			'Bulleted list',
+			'Numbered list',
+			'Checklist',
+			'Quote',
+			'Code block',
+			'Divider',
+			'Collapsible section',
+			'Image or file',
+			'Mention someone',
+			'Emoji'
+		]);
+	});
+
+	test('chat lists lists, quote and code, then the actions, with no checklist', () => {
+		expect(labelsOf('chat')).toEqual([
+			'Bulleted list',
+			'Numbered list',
+			'Quote',
+			'Code block',
+			'Image or file',
+			'Mention someone',
+			'Call link',
+			'Emoji'
+		]);
+	});
+
+	test('Call link is absent for a guest, who has no room', () => {
+		expect(labelsOf('document', { ...all, room: undefined })).not.toContain('Call link');
+		expect(labelsOf('chat', { ...all, room: undefined })).not.toContain('Call link');
+	});
+
+	test('Image or file is absent where the box takes no attachments', () => {
+		expect(labelsOf('document', { ...all, file: undefined })).not.toContain('Image or file');
+	});
+});
+
+describe('filterSlash', () => {
+	const items = slashItems('document', all);
+	const labels = (query: string) => filterSlash(query, items).map((item) => item.label);
+
+	test('lists every item for an empty query', () => {
+		expect(labels('')).toHaveLength(16);
 	});
 
 	test('finds by label, in any case', () => {
@@ -94,6 +155,9 @@ describe('filterSlash', () => {
 		expect(labels('todo')).toEqual(['Checklist']);
 		expect(labels('toggle')).toEqual(['Collapsible section']);
 		expect(labels('list')).toEqual(['Bulleted list', 'Numbered list', 'Checklist']);
+		expect(labels('image')).toEqual(['Image or file']);
+		expect(labels('mention')).toEqual(['Mention someone']);
+		expect(labels('call')).toEqual(['Call link']);
 	});
 
 	test('finds nothing for text no label or alias holds', () => {

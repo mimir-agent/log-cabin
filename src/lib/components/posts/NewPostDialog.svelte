@@ -92,6 +92,7 @@ or the backdrop, keeps what was typed as a draft. Publishing closes it and says 
 				projectName={data.project.name}
 				members={data.members}
 				fromMessage={page.state.fromMessage}
+				shareDoc={page.state.shareDoc}
 				action="/projects/{data.project.id}/new?/publish"
 				picker={{ projects: data.projects, guests: data.guests }}
 				onproject={load}

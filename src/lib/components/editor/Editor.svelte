@@ -10,7 +10,8 @@
 	import { fileNode, uploadFile } from '#lib/editor/upload.js';
 	import { linkHref, localFieldValue, nextHour, timeNode } from '#lib/editor/extensions.js';
 	import { placePopup, visibleArea, watchVisibleArea } from '#lib/editor/suggestion-popup.js';
-	import type { SlashItem } from '#lib/editor/slash.js';
+	import { slashItems, type SlashSurface } from '#lib/editor/slash.js';
+	import type { OrgEmoji } from '#lib/emoji/picker.js';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Button from '#lib/components/ui/Button.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
@@ -22,6 +23,7 @@
 	import {
 		chatKeys,
 		editorExtensions,
+		emojiMenu,
 		findResources,
 		linkKey,
 		mentionSuggestion,
@@ -29,6 +31,8 @@
 		type Member
 	} from './extensions.js';
 	import { Gallery } from './gallery.js';
+	import EmojiPicker from '#lib/components/posts/EmojiPicker.svelte';
+	import { page } from '$app/state';
 	import Lightbox from './Lightbox.svelte';
 	import NoteLinkCard from '#lib/components/notes/NoteLinkCard.svelte';
 	import type { AnyExtension } from '@tiptap/core';
@@ -60,8 +64,8 @@
 		attachIcon?: IconName;
 		/** Allows checklists, from the Checklist tool or by typing "[ ] "; only where a tick is saved. */
 		checklists?: boolean;
-		/** Opens the `/` menu of blocks, in the boxes that hold a whole document (posts, notes). */
-		slash?: boolean;
+		/** Opens the `/` menu, with the items that kind of box lists (a document, a comment, chat). */
+		slash?: SlashSurface;
 		placeholder: string;
 		members: Member[];
 		uploadUrl?: string;
@@ -112,7 +116,7 @@
 		toolbarLast = false,
 		attachIcon,
 		checklists = false,
-		slash = false,
+		slash,
 		placeholder,
 		members,
 		uploadUrl,
@@ -241,6 +245,12 @@
 	let element = $state<HTMLDivElement>();
 	let fileInput = $state<HTMLInputElement>();
 	let tiptap = $state.raw<Editor>();
+	/**
+	 * The org's emoji, from the root layout, which every signed-in page has: the `:` list and the
+	 * Emoji button. Read here so no box has to pass it down.
+	 */
+	const orgEmoji = $derived(page.data.orgEmoji as OrgEmoji | null | undefined);
+	let emojiOpen = $state(false);
 	let active = $state<Set<Tool>>(new Set());
 	let linkActive = $state(false);
 	/** The document's image open in the lightbox, by reading order. */
@@ -318,7 +328,8 @@
 					live,
 					extra
 				}),
-				...(slash ? [slashMenu(() => inserts)] : []),
+				...(slash ? [slashMenu(() => slashList)] : []),
+				...(orgEmoji ? [emojiMenu(() => orgEmoji!)] : []),
 				...(gallery ? [Gallery] : [])
 			],
 			content: live ? undefined : value,
@@ -601,10 +612,15 @@
 		timeOpen = false;
 	}
 
-	/** What `/` offers besides blocks: a file, where files can go. */
-	const inserts = $derived<SlashItem[]>([
-		...(uploadUrl ? [{ ...text.slash.file, act: () => fileInput?.click() }] : [])
-	]);
+	const slashList = $derived(
+		slash
+			? slashItems(slash, {
+					file: uploadUrl ? () => fileInput?.click() : undefined,
+					emoji: orgEmoji ? () => (emojiOpen = true) : undefined,
+					room: page.data.roomPath ? page.url.origin + page.data.roomPath : undefined
+				})
+			: []
+	);
 
 	// The toolbar draws Campsite's icons where it has one for a tool; the rest keep their glyph.
 	const toolIcons: Record<string, IconName> = {
@@ -734,9 +750,47 @@
 	{/if}
 {/snippet}
 
+{#snippet emojiTool()}
+	<UiPopover
+		bind:open={emojiOpen}
+		label={text.emojiTool.button}
+		padding="none"
+		width="20.125rem"
+		sheet
+		onCloseAutoFocus={(event) => {
+			// The caret is where the next word goes, not the button.
+			event.preventDefault();
+			tiptap?.commands.focus();
+		}}
+	>
+		{#snippet trigger({ props: trigger })}
+			<Toolbar.Button {...trigger} {disabled}>
+				{#snippet child({ props })}
+					<button
+						type="button"
+						{...props}
+						class="tool"
+						aria-label={text.emojiTool.button}
+						title={text.emojiTool.tooltip}
+					>
+						<Icon name="face-smile-plus" />
+					</button>
+				{/snippet}
+			</Toolbar.Button>
+		{/snippet}
+		<EmojiPicker
+			orgEmoji={orgEmoji!}
+			onPick={(value) => {
+				tiptap?.chain().focus().insertContent(value).run();
+				emojiOpen = false;
+			}}
+		/>
+	</UiPopover>
+{/snippet}
+
 {#snippet toolbar()}
 	{@const inline = formatting && !bubble}
-	{#if inline || uploadUrl || (formatting && note)}
+	{#if inline || uploadUrl || orgEmoji || (formatting && note)}
 		<Toolbar.Root aria-label={text.toolbar}>
 			{#snippet child({ props })}
 				<div {...props} class="toolbar">
@@ -773,6 +827,7 @@
 					{#if uploadUrl && !toolbarLast}
 						{@render attachTool()}
 					{/if}
+					{#if orgEmoji}{@render emojiTool()}{/if}
 				</div>
 			{/snippet}
 		</Toolbar.Root>

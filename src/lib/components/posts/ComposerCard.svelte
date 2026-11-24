@@ -22,6 +22,8 @@
 		message?: string | null;
 		/** The post is on its way: Post can't be pressed again, and a spinner shows if it takes a while. */
 		busy?: boolean;
+		/** Puts the cursor in the subject when it opens. */
+		focusTitle?: boolean;
 		ontitle?: (title: string) => void;
 		onbody?: (doc: DocNode) => void;
 		/** Parts of the post below its body, such as a poll. */
@@ -45,6 +47,7 @@
 		cancelHref,
 		message,
 		busy = false,
+		focusTitle = false,
 		ontitle,
 		onbody,
 		children,
@@ -63,6 +66,7 @@
 	const canPost = $derived(subject.trim() !== '');
 	let bodyEmpty = $state(untrack(() => !body || isEmptyDoc(body)));
 	onMount(() => {
+		if (focusTitle) card.querySelector<HTMLInputElement>('input[name=title]')?.focus();
 		if (subject !== title) ontitle?.(subject);
 	});
 
@@ -135,7 +139,7 @@
 			name="body"
 			post
 			checklists
-			slash
+			slash="document"
 			bubble
 			value={body}
 			placeholder={s.bodyPlaceholder}

@@ -44,7 +44,7 @@ its submit and cancel buttons in the titlebar, tied to this form by `id`.
 		<Editor
 			name="body"
 			checklists
-			slash
+			slash="document"
 			value={body}
 			note
 			placeholder={s.bodyPlaceholder}

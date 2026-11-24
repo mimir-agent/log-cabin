@@ -7,6 +7,7 @@
 	import type { PickerEmoji, PickerSection } from '#lib/emoji/data.js';
 	import {
 		countUse,
+		customSection,
 		frequentlyUsed,
 		savedSkinTone,
 		savedPickCounts,
@@ -44,17 +45,7 @@
 		if (pickWhenLoaded && flat[0]) pick(flat[0]);
 	});
 
-	const custom = $derived<PickerSection>({
-		id: 'custom',
-		title: orgEmoji.orgName,
-		items: Object.entries(orgEmoji.custom).map(([name, url]) => ({
-			value: `:${name}:`,
-			name,
-			skinTones: false,
-			terms: name,
-			url
-		}))
-	});
+	const custom = $derived(customSection(orgEmoji));
 	const sections = $derived.by(() => {
 		if (!unicode) return [];
 		const all = [custom, ...unicode];

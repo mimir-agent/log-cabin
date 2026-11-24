@@ -26,6 +26,18 @@
 	{/snippet}
 </Story>
 
+<!-- Focus goes where the caller says (an editor takes it back for its caret), not to the trigger. -->
+<Story name="Focus placed by the caller">
+	{#snippet template()}
+		<Popover open label="Pick one" onCloseAutoFocus={(event) => event.preventDefault()}>
+			{#snippet trigger({ props })}
+				<Button {...props} size="sm">Add</Button>
+			{/snippet}
+			<p style="margin: 0">Closing this leaves focus wherever the caller put it.</p>
+		</Popover>
+	{/snippet}
+</Story>
+
 <Story name="Flush content">
 	{#snippet template()}
 		<Popover open padding="none" width="20rem" label="Seen by">

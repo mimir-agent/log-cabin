@@ -28,6 +28,8 @@ declare global {
 			newPost?: string;
 			/** The message that post starts from, by Start a post… on it. */
 			fromMessage?: { id: string; body: import('#lib/editor/doc.js').DocNode };
+			/** The doc that post shares (Share in a thread…), and whether it is in a channel yet. */
+			shareDoc?: { id: string; title: string; inChannel: boolean };
 		}
 	}
 

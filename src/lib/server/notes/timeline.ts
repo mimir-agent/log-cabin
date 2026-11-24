@@ -12,7 +12,9 @@ import { visibleNoteIds } from './access';
 // Each line names the person acting.
 
 type NoteEvent =
-	{ kind: 'project' | 'pinned' | 'unpinned'; projectId: string } | { kind: 'title'; title: string };
+	| { kind: 'project' | 'pinned' | 'unpinned'; projectId: string }
+	| { kind: 'title'; title: string }
+	| { kind: 'posted'; projectId: string; refType: 'post'; refId: string };
 
 /**
  * One line on the note's timeline. The caller publishes it with `publishNoteTimeline`, as it
@@ -80,7 +82,7 @@ export async function recordNoteReferences(
 
 /** A line of a note's timeline as its reader sees it. */
 export type NoteTimelineEvent = { id: string; createdAt: number; actorName: string } & (
-	| { kind: 'project' | 'pinned' | 'unpinned'; project: { id: string; name: string } }
+	| { kind: 'project' | 'pinned' | 'unpinned' | 'posted'; project: { id: string; name: string } }
 	| { kind: 'title'; title: string }
 	| { kind: 'referenced'; ref: { type: NoteRefType; id: string; title: string } }
 );
@@ -126,8 +128,13 @@ export async function listNoteEvents(
 				eq(e.noteId, noteId),
 				or(
 					eq(e.kind, 'title'),
-					and(inArray(e.kind, ['project', 'pinned', 'unpinned']), isNotNull(projects.id)),
-					and(eq(e.kind, 'referenced'), or(isNotNull(posts.id), isNotNull(notes.id)))
+					and(inArray(e.kind, ['project', 'pinned', 'unpinned', 'posted']), isNotNull(projects.id)),
+					and(
+						eq(e.kind, 'referenced'),
+						or(isNotNull(posts.id), isNotNull(notes.id)),
+						// A post that shared the note has its own line, which says more.
+						sql`NOT EXISTS (SELECT 1 FROM ${e} AS shared WHERE shared.note_id = ${e.noteId} AND shared.kind = 'posted' AND shared.ref_id = ${e.refId})`
+					)
 				)
 			)
 		)

@@ -18,13 +18,15 @@ the post.
 		value: string;
 		/** How many guests belong to the picked project. */
 		guests: number;
+		/** Opens with its list showing, for a post that has no channel yet. */
+		startOpen?: boolean;
 		onchange: (id: string) => void;
 	};
 
-	const { projects, value, guests, onchange }: Props = $props();
+	const { projects, value, guests, startOpen = false, onchange }: Props = $props();
 	const s = posts.composer;
 
-	let open = $state(false);
+	let open = $state(startOpen);
 	let query = $state('');
 	let list = $state<HTMLElement>();
 	const picked = $derived(projects.find((p) => p.id === value));

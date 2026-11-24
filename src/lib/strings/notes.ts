@@ -150,7 +150,9 @@ export const notes = {
 		title: 'Tell people about this doc',
 		/** Under the title. True: a thread notifies followers; adding to a channel sends nothing. Limit: 64. */
 		line: 'Notifies the channel’s followers. Adding it to one doesn’t.',
-		button: 'Share in a thread…'
+		button: 'Share in a thread…',
+		/** In the post dialog, for a doc that is in no channel yet: posting adds it to the one picked. Limit: 64. */
+		adds: 'Posting adds this doc to the channel. People there can view it.'
 	},
 	publish: {
 		/** Heads the Share popover's section that publishes the note to the web. */

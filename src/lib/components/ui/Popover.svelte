@@ -24,6 +24,8 @@
 		boundary?: Element | null;
 		/** Below 1024px, a sheet from the bottom of the screen over a dimmed page, as Menu. */
 		sheet?: boolean;
+		/** Called as it closes, where focus would go back to the trigger; `preventDefault` to place it elsewhere. */
+		onCloseAutoFocus?: (event: Event) => void;
 		onOpenChange?: (open: boolean) => void;
 	};
 
@@ -39,6 +41,7 @@
 		label,
 		boundary = null,
 		sheet = false,
+		onCloseAutoFocus,
 		onOpenChange
 	}: Props = $props();
 </script>
@@ -60,7 +63,10 @@
 			customAnchor={anchor}
 			trapFocus={!anchor}
 			onOpenAutoFocus={(event) => anchor && event.preventDefault()}
-			onCloseAutoFocus={(event) => anchor && event.preventDefault()}
+			onCloseAutoFocus={(event) => {
+				if (anchor) event.preventDefault();
+				onCloseAutoFocus?.(event);
+			}}
 			collisionBoundary={boundary}
 			collisionPadding={8}
 		>
