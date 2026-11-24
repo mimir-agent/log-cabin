@@ -45,6 +45,9 @@ declare global {
 		VAPID_PRIVATE_KEY?: string;
 		/** The deployment's base URL, for links in email sent from cron jobs. */
 		APP_URL?: string;
+		/** Install-time defaults for Settings > Organization > Operator name and contact. */
+		OPERATOR_NAME?: string;
+		LEGAL_CONTACT_EMAIL?: string;
 		/** This deployment's OAuth client key for AT Protocol sign-in: an ES256 P-256 private JWK. */
 		ATPROTO_CLIENT_KEY?: string;
 		GOOGLE_CLIENT_ID?: string;

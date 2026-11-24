@@ -40,6 +40,9 @@ export const org = sqliteTable('org', {
 		.default('members'),
 	domainJoin: text('domain_join', { enum: domainJoinModes }).notNull().default('off'),
 	callRecording: text('call_recording', { enum: callRecordingModes }).notNull().default('ask'),
+	/** 0047: who runs this instance and how to reach them; null falls back to the deployment's env. */
+	operatorName: text('operator_name'),
+	operatorContact: text('operator_contact'),
 	createdAt: integer('created_at').notNull()
 });
 

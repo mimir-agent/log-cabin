@@ -256,10 +256,15 @@ export const auth = {
 			'Everyone, you included, has to set up two-factor authentication before using the app. Members who haven’t are asked the next time they open it.',
 		save: 'Save settings',
 		saved: 'Settings saved.',
+		operatorName: 'Operator name',
+		operatorContact: 'Operator contact email',
+		operatorHint:
+			'Shown on the privacy and terms pages as who runs this instance. Also the Reply-To address on the email it sends. If you leave the contact empty, those pages send people to the organization’s admins.',
 		errors: {
 			notAdmin: 'Only an admin can change organization settings.',
 			nameMissing: 'Enter the organization’s name.',
-			domainInvalid: 'Enter a domain like example.com, without the @.'
+			domainInvalid: 'Enter a domain like example.com, without the @.',
+			contactInvalid: 'Enter an email address like name@example.com.'
 		}
 	},
 	invites: {

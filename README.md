@@ -60,7 +60,9 @@ Set the `EMAIL_TRANSPORT` variable in `wrangler.jsonc` to choose how Log Cabin s
 | `resend`     | Resend                                                                     | The `RESEND_API_KEY` secret                                                                       |
 | `postmark`   | Postmark                                                                   | The `POSTMARK_TOKEN` secret                                                                       |
 
-`EMAIL_FROM` sets the sender address. With `cloudflare`, `EMAIL_REPLY_TO` optionally sets a Reply-To address.
+`EMAIL_FROM` sets the sender address. With `cloudflare`, replies go to the operator contact when one is set.
+
+The operator name and contact appear on the privacy and terms pages and are the Reply-To of outgoing mail. Admins change them under **Settings > Organization**. `OPERATOR_NAME` and `LEGAL_CONTACT_EMAIL` set the starting values for a new deployment; with neither set, the pages tell people to ask the organization's admins and list their names.
 
 To send with Resend, add and verify your domain in Resend, then create an API key there and set it as the `RESEND_API_KEY` secret. Set `EMAIL_TRANSPORT` to `resend` and `EMAIL_FROM` to an address at the domain you verified.
 

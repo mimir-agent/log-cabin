@@ -1,5 +1,6 @@
 import { db, schema } from '../db';
 import { newId } from '../id';
+import { getOperator } from '../org';
 import type { RenderedEmail } from './layout';
 
 /**
@@ -52,13 +53,14 @@ const transports = {
 			);
 		}
 		try {
+			const { contact } = await getOperator(env);
 			await env.EMAIL.send({
 				from: cloudflareAddress(from),
 				to: message.to,
 				subject: message.subject,
 				html: message.html,
 				text: message.text,
-				...(env.EMAIL_REPLY_TO ? { replyTo: env.EMAIL_REPLY_TO } : {}),
+				...(contact && { replyTo: contact }),
 				...(message.headers && { headers: message.headers })
 			});
 		} catch (cause) {

@@ -155,8 +155,16 @@ describe('sendEmail', () => {
 				messageId: 'm1'
 			}))
 		});
-		const cloudflare = (EMAIL: ReturnType<typeof binding>, overrides = {}) =>
-			envWith({ EMAIL_TRANSPORT: 'cloudflare', EMAIL, ...overrides });
+		const cloudflare = (EMAIL: ReturnType<typeof binding>, overrides = {}, contact?: string) => {
+			const { sqlite, d1 } = fakeD1();
+			sqlite.exec(readFileSync('migrations/0047_operator_contact.sql', 'utf8'));
+			sqlite
+				.prepare(
+					"INSERT INTO org (id, name, operator_contact, created_at) VALUES (1, 'Northwind', ?, 0)"
+				)
+				.run(contact ?? null);
+			return envWith({ EMAIL_TRANSPORT: 'cloudflare', EMAIL, DB: d1, ...overrides });
+		};
 
 		it('sends the parts with the sender split into name and address', async () => {
 			const EMAIL = binding();
@@ -180,10 +188,17 @@ describe('sendEmail', () => {
 			expect(EMAIL.send.mock.calls[0][0]).toMatchObject({ from: 'campfire@example.com' });
 		});
 
-		it('adds Reply-To when EMAIL_REPLY_TO is set, and none when it is not', async () => {
-			const withReply = binding();
-			await sendEmail(cloudflare(withReply, { EMAIL_REPLY_TO: 'help@example.com' }), message);
-			expect(withReply.send.mock.calls[0][0]).toMatchObject({ replyTo: 'help@example.com' });
+		it('adds Reply-To from the operator contact, the env default or neither', async () => {
+			const saved = binding();
+			await sendEmail(
+				cloudflare(saved, { LEGAL_CONTACT_EMAIL: 'env@example.com' }, 'help@example.com'),
+				message
+			);
+			expect(saved.send.mock.calls[0][0]).toMatchObject({ replyTo: 'help@example.com' });
+
+			const fromEnv = binding();
+			await sendEmail(cloudflare(fromEnv, { LEGAL_CONTACT_EMAIL: 'env@example.com' }), message);
+			expect(fromEnv.send.mock.calls[0][0]).toMatchObject({ replyTo: 'env@example.com' });
 
 			const without = binding();
 			await sendEmail(cloudflare(without), message);

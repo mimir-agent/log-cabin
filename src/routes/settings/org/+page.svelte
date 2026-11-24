@@ -57,6 +57,22 @@
 						{/snippet}
 					</SettingsField>
 					<DomainSetting domain={data.org.allowedEmailDomain} mode={data.org.domainJoin} />
+					<SettingsField label={s.operatorName}>
+						{#snippet children({ id })}
+							<input {id} name="operatorName" value={data.operator.name ?? ''} />
+						{/snippet}
+					</SettingsField>
+					<SettingsField label={s.operatorContact} hint={s.operatorHint}>
+						{#snippet children({ id, hintId })}
+							<input
+								{id}
+								name="operatorContact"
+								type="email"
+								aria-describedby={hintId}
+								value={data.operator.contact ?? ''}
+							/>
+						{/snippet}
+					</SettingsField>
 				</div>
 			</div>
 			<!-- What the org turns on, one switch a row, each saying what "on" does. -->

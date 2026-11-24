@@ -4,7 +4,8 @@ import { requireMember } from '#lib/server/auth/guard.js';
 import { googleConfigured } from '#lib/server/auth/google.js';
 import { aiConfigured } from '#lib/server/ai/summaries.js';
 import { calcomAvailable } from '#lib/server/calcom/calcom.js';
-import { getOrg, parseDomainSetting, updateOrg } from '#lib/server/org.js';
+import { getOperator, getOrg, parseDomainSetting, updateOrg } from '#lib/server/org.js';
+import { isEmail } from '#lib/server/setup.js';
 import { getObjectUrl, saveImage } from '#lib/server/storage.js';
 import { callRecordingModes } from '#lib/server/db/schema/index.js';
 import { auth } from '#lib/strings/auth.js';
@@ -14,7 +15,9 @@ export const load: PageServerLoad = async (event) => {
 	requireMember(event, 'admin');
 	const env = getEnv();
 	const org = await getOrg(env);
+	const operator = await getOperator(env);
 	return {
+		operator,
 		org: {
 			name: org.name,
 			allowedEmailDomain: org.allowedEmailDomain ?? '',
@@ -43,6 +46,11 @@ export const actions: Actions = {
 		if (!name) return fail(400, { message: errors.nameMissing });
 		const domain = parseDomainSetting(form);
 		if (!domain.ok) return fail(400, { message: domain.message });
+		const operatorName = String(form.get('operatorName') ?? '').trim();
+		const operatorContact = String(form.get('operatorContact') ?? '').trim();
+		if (operatorContact && !isEmail(operatorContact)) {
+			return fail(400, { message: errors.contactInvalid });
+		}
 		const callRecording = callRecordingModes.find((mode) => mode === form.get('callRecording'));
 		if (!callRecording) {
 			throw new Error(
@@ -52,6 +60,8 @@ export const actions: Actions = {
 		const changes = {
 			name,
 			...domain.changes,
+			operatorName: operatorName || null,
+			operatorContact: operatorContact || null,
 			callRecording,
 			googleSignIn: form.get('google') === 'on',
 			aiEnabled: form.get('ai') === 'on',

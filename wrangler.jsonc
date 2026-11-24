@@ -48,8 +48,8 @@
 	// IMAGES needs Cloudflare Images on the account.
 	// "images": { "binding": "IMAGES" },
 	// EMAIL sends mail through Cloudflare Email Sending from a domain you have onboarded to it; then
-	// set EMAIL_TRANSPORT to "cloudflare", EMAIL_FROM to an address on that domain and, if you want
-	// replies to go somewhere, EMAIL_REPLY_TO. See env.beta.
+	// set EMAIL_TRANSPORT to "cloudflare" and EMAIL_FROM to an address on that domain. Replies go to
+	// the operator contact (Settings > Organization), when one is set. See env.beta.
 	// "send_email": [{ "name": "EMAIL" }],
 	"triggers": {
 		// Every 5 minutes: the job sweeper. Every hour: digests for users whose local hour it is.
@@ -99,7 +99,6 @@
 			"vars": {
 				"EMAIL_TRANSPORT": "cloudflare",
 				"EMAIL_FROM": "Log Cabin <cabin@yaaia.id>",
-				"EMAIL_REPLY_TO": "mir@yaaia.id",
 				"ATTACHMENT_MAX_MB": "25",
 				"APP_URL": "https://cabin.yaaia.id"
 			}
