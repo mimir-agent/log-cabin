@@ -71,7 +71,12 @@
 		{#if data.live.length > 0}
 			<section class="live" aria-label={s.live}>
 				{#each data.live as call (call.id)}
-					<LiveCallRow id={call.id} label={s.liveIn(call.place.name, call.names)} />
+					<LiveCallRow
+						id={call.id}
+						label={call.place.name}
+						startedAt={call.startedAt}
+						people={call.people}
+					/>
 				{/each}
 			</section>
 		{/if}

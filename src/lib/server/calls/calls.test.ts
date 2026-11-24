@@ -150,6 +150,35 @@ describe('media in a call', () => {
 	});
 });
 
+describe('telling every page which calls are live', () => {
+	it('publishes when a call starts, someone joins, someone leaves and the call ends', async () => {
+		const { env, person, privateProject, published } = await world();
+		const ada = await person('Ada', 'member');
+		const bo = await person('Bo', 'member');
+		const place = await privateProject(ada, bo);
+		const live = () => published.filter((p) => p.topic === 'calls:live').length;
+
+		const id = await startCall(env, ada, place, 1_000);
+		expect(live()).toBe(1);
+		const adaIn = await joinCall(env, ada, await loadCall(env, ada, id, 1_000), 1_000);
+		const boIn = await joinCall(env, bo, await loadCall(env, bo, id, 2_000), 2_000);
+		expect(live()).toBe(3);
+		await leaveCall(env, ada, await loadCall(env, ada, id, 3_000), adaIn.participantId, 3_000);
+		expect(live()).toBe(4);
+		await leaveCall(env, bo, await loadCall(env, bo, id, 3_000), boIn.participantId, 4_000);
+		expect(live()).toBe(5);
+		expect(published.at(-1)).toEqual({ topic: 'calls:live', payload: { type: 'live' } });
+	});
+
+	it('lets any member hear it, and nobody ask for another topic of that kind', async () => {
+		const { env, person } = await world();
+		const ada = await person('Ada', 'member');
+
+		expect(await canSubscribe(env, ada.user.id, 'calls:live')).toBe(true);
+		expect(await canSubscribe(env, ada.user.id, 'calls:other')).toBe(false);
+	});
+});
+
 describe('leaving and ending', () => {
 	it('ends the call when the last person leaves, and keeps who was in it and for how long', async () => {
 		const { env, person, privateProject, published } = await world();

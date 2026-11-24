@@ -47,6 +47,9 @@ function connect() {
 	};
 }
 
+/** Whether the socket is open now; false while it is down and backing off. */
+export const connected = () => socket?.readyState === WebSocket.OPEN;
+
 function sendIfOpen(message: { type: string; topic: string }) {
 	if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
 }

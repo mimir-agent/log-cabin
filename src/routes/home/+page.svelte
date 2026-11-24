@@ -66,6 +66,9 @@
 				<a class="place" href={place.href}>
 					<PageIcon tone={place.tone} />
 					{place.label}
+					{#if place.tone === 'call' && data.liveCallCount > 0}
+						<span class="live" role="img" aria-label={shell.callsLive(data.liveCallCount)}></span>
+					{/if}
 				</a>
 			</li>
 		{/each}
@@ -174,6 +177,7 @@
 
 	/* Each place is a small raised card: its mark, then its name at 15px medium. */
 	.place {
+		position: relative;
 		display: flex;
 		flex: 1;
 		flex-direction: column;
@@ -186,6 +190,16 @@
 		font-size: 0.9375rem;
 		font-weight: var(--fw-medium);
 		text-decoration: none;
+	}
+
+	.live {
+		position: absolute;
+		inset-block-start: var(--gap-sm);
+		inset-inline-end: var(--gap-sm);
+		inline-size: var(--gap-sm);
+		block-size: var(--gap-sm);
+		border-radius: var(--radius-full);
+		background-color: var(--hue-call);
 	}
 
 	.place:active {

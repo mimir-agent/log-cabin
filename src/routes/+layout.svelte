@@ -17,7 +17,7 @@
 	import { resolve } from '$app/paths';
 	import { navigating, page } from '$app/state';
 	import { showInTab, type NewNotification } from '#lib/in-tab-notification.js';
-	import { subscribe } from '#lib/realtime.js';
+	import { connected, subscribe } from '#lib/realtime.js';
 	import { trackKeyboard } from '#lib/editor/keyboard.js';
 	import { zoneCookie, zoneToFollow } from '#lib/time-zone.js';
 	import AppShell from '#lib/components/shell/AppShell.svelte';
@@ -28,6 +28,7 @@
 	import { notes } from '#lib/strings/notes.js';
 	import Toast from '#lib/components/ui/Toast.svelte';
 	import { core } from '#lib/strings/core.js';
+	import { shell } from '#lib/strings/shell.js';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -123,6 +124,21 @@
 			if (payload.type === 'resync') invalidateAll();
 		});
 	});
+	// Who is in a call changes the Calls dot and the live rows. The hub says when; the timer only
+	// stands in for it while the socket is down.
+	$effect(() => {
+		if (!userId) return;
+		const unsubscribe = subscribe('calls:live', (payload) => {
+			if (payload.type === 'live') invalidate('calls:live');
+		});
+		const poll = setInterval(() => {
+			if (!connected()) invalidate('calls:live');
+		}, 30_000);
+		return () => {
+			unsubscribe();
+			clearInterval(poll);
+		};
+	});
 	// New post opens Campsite's dialog over the page you're on. Every New post link points at
 	// its project's /new address, so a reload or a copied link opens the same dialog, over that
 	// project; a click here opens it in place instead, unless a modifier asks for a new tab or
@@ -170,6 +186,7 @@
 		role={data.member.role}
 		{currentPath}
 		counts={{ '/inbox': unread }}
+		live={data.liveCallCount > 0 ? { '/calls': shell.callsLive(data.liveCallCount) } : {}}
 		{newPostHref}
 		favorites={hasFavorites ? favorites : undefined}
 		projects={data.sidebarProjects?.joined.length ? projects : undefined}

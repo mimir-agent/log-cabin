@@ -5,6 +5,8 @@
 		id: string;
 		name: string;
 		src?: string | null;
+		/** Makes the face a link, to the person's profile. */
+		href?: string;
 		/** Shown faded: seen it before but not here now, or invited but not joined. */
 		away?: boolean;
 		/** Their person colour (a note's live cursors): the ring around the face takes it, so a face matches its caret. */
@@ -37,7 +39,14 @@
 			data-hue={person.hue}
 			title={person.name}
 		>
-			<Avatar name={person.name} src={person.src} {size} />
+			{#if person.href}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the caller resolved it -->
+				<a href={person.href} class="person" aria-label={person.name}
+					><Avatar name={person.name} src={person.src} {size} /></a
+				>
+			{:else}
+				<Avatar name={person.name} src={person.src} {size} />
+			{/if}
 		</li>
 	{/each}
 	{#if rest.length > 0}
@@ -75,6 +84,11 @@
 		border-radius: var(--radius-full);
 		/* A ring of the surface colour cuts each face out of the one under it. */
 		box-shadow: 0 0 0 var(--border-w-standard) var(--ring);
+	}
+
+	.person {
+		display: inline-grid;
+		border-radius: var(--radius-full);
 	}
 
 	.face[data-away] {

@@ -372,6 +372,25 @@ describe('publishing', () => {
 		});
 	});
 
+	it('tells everyone who watches the live calls when a call’s page opens or closes', async () => {
+		const { env, hub, person, connect, subscribe } = await world();
+		const ada = await person('Ada', 'member');
+		const bo = await person('Bo', 'member');
+		const threadId = await startDm(env, ada, bo.user.id);
+		await db(env)
+			.insert(schema.calls)
+			.values({ id: 'call-1', threadId, startedBy: ada.user.id, startedAt: 0 });
+		const watcher = connect(bo);
+		await subscribe(watcher, 'calls:live');
+		const adaPage = connect(ada);
+		await subscribe(adaPage, 'call:call-1');
+
+		expect(watcher.sent.at(-1)).toEqual({ topic: 'calls:live', payload: { type: 'live' } });
+		watcher.sent.length = 0;
+		await hub.webSocketClose(adaPage as unknown as WebSocket);
+		expect(watcher.sent).toEqual([{ topic: 'calls:live', payload: { type: 'live' } }]);
+	});
+
 	it('tells a call’s pages, the one opening included, whenever one opens or closes', async () => {
 		const { env, hub, person, connect, subscribe } = await world();
 		const ada = await person('Ada', 'member');

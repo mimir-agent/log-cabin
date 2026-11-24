@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ComponentProps } from 'svelte';
 	import { page } from '$app/state';
 	import LiveCallRow from '#lib/components/calls/LiveCallRow.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
@@ -6,7 +7,12 @@
 	import { time } from '#lib/strings/time.js';
 
 	type Props = {
-		live: { id: string; names: string[] } | null;
+		live: {
+			id: string;
+			startedAt: number;
+			names: string[];
+			people: ComponentProps<typeof LiveCallRow>['people'];
+		} | null;
 		recent: { id: string; startedAt: number; durationMs: number; names: string[] }[];
 	};
 
@@ -19,7 +25,12 @@
 {#if live || recent.length > 0}
 	<section class="calls">
 		{#if live}
-			<LiveCallRow id={live.id} label={s.live(live.names)} />
+			<LiveCallRow
+				id={live.id}
+				label={s.live(live.names)}
+				startedAt={live.startedAt}
+				people={live.people}
+			/>
 		{/if}
 		{#if recent.length > 0}
 			<h2 class="heading">{s.recent}</h2>

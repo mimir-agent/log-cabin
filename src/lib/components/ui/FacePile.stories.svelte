@@ -1,5 +1,6 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import { expect, within } from 'storybook/test';
 	import FacePile from './FacePile.svelte';
 
 	const people = [
@@ -46,6 +47,19 @@
 		],
 		label: '3 people editing',
 		size: 'sm'
+	}}
+/>
+
+<Story
+	name="Linked to profiles"
+	args={{
+		people: people.slice(0, 3).map((p) => ({ ...p, href: `/people/id/${p.id}` })),
+		label: '3 people in the call'
+	}}
+	play={async ({ canvasElement }) => {
+		const link = within(canvasElement).getByRole('link', { name: 'Morgan Lee' });
+		await expect(link).toHaveAttribute('href', '/people/id/1');
+		await expect(link.closest('li')).toHaveAttribute('title', 'Morgan Lee');
 	}}
 />
 

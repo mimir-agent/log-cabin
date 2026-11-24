@@ -37,6 +37,8 @@
 		currentPath: string;
 		/** Unread counts by nav href, e.g. `{ '/inbox': 3 }`. */
 		counts?: Record<string, number>;
+		/** Nav hrefs with something live in them, each with what a screen reader hears: `{ '/calls': '1 call live' }`. */
+		live?: Record<string, string>;
 		/** Where the New menu's post row goes. */
 		newPostHref?: string;
 		/** The sidebar's favorite projects, threads and notes. */

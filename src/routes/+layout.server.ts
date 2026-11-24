@@ -5,6 +5,7 @@ import { getOrg } from '#lib/server/org.js';
 import { getObjectUrl } from '#lib/server/storage.js';
 import { sidebarProjects } from '#lib/server/posts/projects.js';
 import { dropUnseenNoteFavorites, sidebarFavorites } from '#lib/server/favorites.js';
+import { liveCalls } from '#lib/server/calls/history.js';
 import { roomPath } from '#lib/server/calls/rooms.js';
 import { ringingFor } from '#lib/server/calls/invitations.js';
 import { callsEnabled } from '#lib/server/calls/sfu.js';
@@ -28,6 +29,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 			favorites: null,
 			unread: 0,
 			ringing: [],
+			liveCallCount: 0,
 			timeZone,
 			memberZone: null,
 			// Signed out there is no org emoji to show: those pages have no reactions or picker.
@@ -42,6 +44,8 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 	// Reading the path reruns this load on every navigation, which keeps the unread count fresh.
 	void url.pathname;
 	depends('calls:ringing');
+	// Who is in a call changes as people join and leave, so the Calls dot reloads on its own.
+	depends('calls:live');
 	// Favorite threads show their unread state, which a thread list change can change.
 	depends('chat:threads');
 	const env = getEnv();
@@ -54,6 +58,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		{ hiddenNotes, ...favorites },
 		unread,
 		ringing,
+		liveCallCount,
 		customEmoji,
 		people,
 		recent,
@@ -65,6 +70,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		sidebarFavorites(env, who),
 		unreadCount(env, user.id),
 		callsEnabled(env) ? ringingFor(env, who) : [],
+		callsEnabled(env) ? liveCalls(env, who).then((live) => live.length) : 0,
 		customEmojiUrls(env),
 		// The quick switcher matches these as you type, before the server's search answers.
 		findablePeople(env, who),
@@ -85,6 +91,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		favorites,
 		unread,
 		ringing,
+		liveCallCount,
 		timeZone,
 		memberZone,
 		// A guest has no personal room.

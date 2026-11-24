@@ -28,6 +28,7 @@ export const shell = {
 	},
 	unread: (count: number) => (count === 1 ? '1 unread' : `${count} unread`),
 	unreadDot: 'Unread',
+	callsLive: (count: number) => (count === 1 ? '1 call live' : `${count} calls live`),
 	/** Markers in the sidebar: Home has posts you haven't looked at, Activity has unseen items. */
 	markers: {
 		homeNew: 'New posts',

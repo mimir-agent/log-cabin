@@ -6,7 +6,7 @@ import { load } from './+page.server';
 
 function event(who: SignedIn, query = '') {
 	const url = new URL(`https://campfire.test/calls${query}`);
-	return { locals: who, url, request: new Request(url) } as never;
+	return { locals: who, url, request: new Request(url), depends: () => {} } as never;
 }
 
 describe('/calls', () => {
@@ -24,7 +24,7 @@ describe('/calls', () => {
 		expect(data).toMatchObject({
 			enabled: true,
 			roomPath: '/calls/room/ada',
-			live: [{ id: live, place: { name: 'Bo’s room' } }],
+			live: [{ id: live, place: { name: 'Bo’s room' }, people: [] }],
 			calls: [{ id: over }]
 		});
 	});

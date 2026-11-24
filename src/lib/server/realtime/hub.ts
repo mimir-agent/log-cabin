@@ -270,5 +270,8 @@ export class RealtimeHub extends DurableObject<Env> {
 	private announcePresence(topic: string, closing?: WebSocket): void {
 		if (!topic.startsWith('thread:') && !topic.startsWith('call:')) return;
 		this.send(topic, { type: 'presence', userIds: this.present(topic, closing) }, closing);
+		// Someone arriving at or dropping out of a call changes the live calls too; a page that
+		// reloads them also settles a call whose last browser closed without leaving.
+		if (topic.startsWith('call:')) this.send('calls:live', { type: 'live' }, closing);
 	}
 }

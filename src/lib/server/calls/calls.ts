@@ -6,6 +6,7 @@ import { newId } from '../id';
 import { emit } from '../events';
 import { presentUserIds, publish } from '../realtime/publish';
 import { canSeeProjectById } from '../posts/access';
+import { getObjectUrl } from '../storage';
 import { isThreadMember } from '../chat/threads';
 import type { SignedIn } from '../auth/session';
 import { calls as strings } from '../../strings/calls';
@@ -48,6 +49,10 @@ export function placeColumn(place: CallPlace) {
 }
 
 const placeTopic = (place: CallPlace) => `${place.kind}:${place.id}`;
+
+/** Every member's pages listen here; a payload says only that the live calls changed, never which. */
+const liveCallsTopic = 'calls:live';
+const announceLive = (env: Env) => publish(env, liveCallsTopic, { type: 'live' });
 
 /**
  * Who can see a place and join its live calls: whoever can see the project, the people in
@@ -129,6 +134,7 @@ export async function startCall(
 		});
 	await startAutoRecording(env, { id, startedBy: who.user.id }, now);
 	await publish(env, placeTopic(place), { type: 'call' });
+	await announceLive(env);
 	return id;
 }
 
@@ -157,6 +163,7 @@ function activeParticipants(env: Env, callId: string) {
 			id: p.id,
 			userId: p.userId,
 			name: sql<string>`coalesce(${users.name}, ${guests.name})`,
+			avatarKey: users.avatarKey,
 			sessionId: p.sessionId,
 			tracks: p.tracks,
 			muted: p.muted,
@@ -187,6 +194,7 @@ export async function joinCall(env: Env, caller: Caller, call: LoadedCall, now =
 		});
 	if (!guest) await acceptOnJoin(env, caller.user.id, call.id, now);
 	await announce(env, call);
+	await announceLive(env);
 	return { participantId: id, sessionId, iceServers: await sfu.iceServers(env) };
 }
 
@@ -371,6 +379,7 @@ async function endIfEmpty(env: Env, call: CallRow, now: number) {
 	else {
 		await syncRecording(env, call.id, now);
 		await announce(env, call);
+		await announceLive(env);
 	}
 }
 
@@ -386,6 +395,7 @@ async function finish(env: Env, call: CallRow, now: number) {
 	await emit(env, { kind: 'call.ended', callId: call.id });
 	await publish(env, `call:${call.id}`, { type: 'ended' });
 	await publish(env, placeTopic(placeOf(call)), { type: 'call' });
+	await announceLive(env);
 }
 
 /**
@@ -450,6 +460,7 @@ async function settle(env: Env, call: CallRow, now: number): Promise<boolean> {
 	if (left > 0) {
 		await syncRecording(env, call.id, now);
 		await announce(env, call);
+		await announceLive(env);
 	}
 	return true;
 }
@@ -484,5 +495,16 @@ export async function liveCall(env: Env, place: CallPlace, now = Date.now()) {
 export async function liveSummary(env: Env, call: CallRow, now = Date.now()) {
 	if (!(await settle(env, call, now))) return null;
 	const people = await activeParticipants(env, call.id);
-	return { id: call.id, startedAt: call.startedAt, names: [...new Set(people.map((p) => p.name))] };
+	return {
+		id: call.id,
+		startedAt: call.startedAt,
+		names: [...new Set(people.map((p) => p.name))],
+		// Guests have no account to link to, so no userId.
+		people: people.map((p) => ({
+			id: p.id,
+			userId: p.userId,
+			name: p.name,
+			avatarUrl: p.avatarKey ? getObjectUrl(p.avatarKey) : null
+		}))
+	};
 }

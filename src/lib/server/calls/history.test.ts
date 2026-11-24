@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { SignedIn } from '#lib/server/auth/session.js';
 import { db, schema } from '#lib/server/db/index.js';
 import { newId } from '#lib/server/id.js';
-import { startDm } from '#lib/server/chat/threads.js';
+import { createGroup, startDm } from '#lib/server/chat/threads.js';
 import { loadProject } from '#lib/server/posts/access.js';
 import {
 	addProjectMember,
@@ -240,8 +240,34 @@ describe('the calls going on now', () => {
 			id: room,
 			startedAt: 20_000,
 			names: ['Bo'],
+			people: [{ id: expect.any(String), userId: bo.user.id, name: 'Bo', avatarUrl: null }],
 			place: { name: 'Bo’s room', href: '/calls/room/bo' }
 		});
+	});
+
+	it('shows a group conversation’s call to its members and to nobody else', async () => {
+		const { env, ada, bo, cy, gus } = await world();
+		const group = await createGroup(env, ada, 'Launch', [bo.user.id]);
+		const id = await startCall(env, ada, { kind: 'thread', id: group }, 10_000);
+		const seen = (who: SignedIn) =>
+			liveCalls(env, who, 30_000).then((calls) => calls.map((c) => c.id));
+
+		expect(await seen(ada)).toEqual([id]);
+		expect(await seen(bo)).toEqual([id]);
+		expect(await seen(cy)).toEqual([]);
+		expect(await seen(gus)).toEqual([]);
+	});
+
+	it('stops showing a private channel’s call to someone taken out of it', async () => {
+		const { env, ada, bo, privateProject } = await world();
+		const place = await privateProject(ada, bo);
+		const id = await startCall(env, ada, place, 10_000);
+		const seen = () => liveCalls(env, bo, 30_000).then((calls) => calls.map((c) => c.id));
+		expect(await seen()).toEqual([id]);
+
+		await removeProjectMember(env, ada, await loadProject(env, ada, place.id), bo.user.id);
+
+		expect(await seen()).toEqual([]);
 	});
 
 	it('leaves out a call that has ended', async () => {

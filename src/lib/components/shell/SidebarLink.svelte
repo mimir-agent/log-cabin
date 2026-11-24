@@ -7,6 +7,8 @@
 		current?: boolean;
 		/** Unread count; shown as a badge when above zero. */
 		count?: number;
+		/** Something live in it: a green dot after the label, with this as its name for a screen reader. */
+		live?: string;
 		/** Something new in it: the label goes heavy and full-strength. */
 		unread?: boolean;
 		/** An icon, avatar or project mark before the label, in a 20px box. */
@@ -14,7 +16,15 @@
 		children: Snippet;
 	};
 
-	let { href, current = false, count = 0, unread = false, leading, children }: Props = $props();
+	let {
+		href,
+		current = false,
+		count = 0,
+		unread = false,
+		live,
+		leading,
+		children
+	}: Props = $props();
 </script>
 
 <!-- Callers pass resolved paths: nav items are registered in #lib/nav, projects come from data. -->
@@ -29,6 +39,7 @@
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	{#if leading}<span class="leading">{@render leading()}</span>{/if}
 	<span class="label">{@render children()}</span>
+	{#if live}<span class="live" role="img" aria-label={live}></span>{/if}
 	{#if count > 0}
 		<span class="count">
 			<span aria-hidden="true">{count}</span>
@@ -93,6 +104,15 @@
 
 	.link[data-unread] .label {
 		font-weight: 750;
+	}
+
+	/* A live call: a quiet green dot, the call colour. */
+	.live {
+		flex: none;
+		inline-size: var(--gap-sm);
+		block-size: var(--gap-sm);
+		border-radius: var(--radius-full);
+		background-color: var(--hue-call);
 	}
 
 	/* The count: a small mono pill, quiet unless something calls for attention. */

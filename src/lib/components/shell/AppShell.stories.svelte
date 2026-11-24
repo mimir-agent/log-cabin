@@ -4,6 +4,7 @@
 	import ThreadAvatar from '#lib/components/chat/ThreadAvatar.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import { addNav, nav } from '#lib/nav.js';
+	import { shell } from '#lib/strings/shell.js';
 	import AppShell from './AppShell.svelte';
 	import Avatar from './Avatar.svelte';
 	import EmptyState from './EmptyState.svelte';
@@ -85,6 +86,24 @@ applied 0003_posts.sql in 412ms</code
 					</p>
 				{/snippet}
 			</PageColumns>
+		</AppShell>
+	{/snippet}
+</Story>
+
+<!-- A call going on: a green dot beside Calls in the sidebar. -->
+<Story
+	name="Call live"
+	args={{ live: { '/calls': shell.callsLive(1) } }}
+	play={async ({ canvasElement }) => {
+		const dots = within(canvasElement).getAllByRole('img', { name: shell.callsLive(1) });
+		await expect(dots.length).toBeGreaterThan(0);
+		for (const dot of dots) await expect(dot.closest('a')).toHaveAttribute('href', '/calls');
+	}}
+>
+	{#snippet template(args)}
+		<AppShell {...args}>
+			<PageHeader title="Notes" />
+			<EmptyState title="No notes yet" />
 		</AppShell>
 	{/snippet}
 </Story>

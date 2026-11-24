@@ -56,10 +56,13 @@ export const calls = {
 		},
 		emptyHint: 'When you record a call, its transcript and summary appear here.',
 		live: 'Live calls',
-		liveIn: (place: string, names: string[]) => {
-			const others = names.filter((name) => name !== place);
-			return others.length === 0 ? place : `${place} · ${others.join(', ')}`;
+		elapsed: (minutes: number) => {
+			if (minutes < 1) return 'Just now';
+			if (minutes < 60) return `${minutes} min`;
+			const rest = minutes % 60;
+			return `${Math.floor(minutes / 60)} h${rest ? ` ${rest} min` : ''}`;
 		},
+		inCall: (names: string[]) => `In the call: ${names.join(', ')}`,
 		start: 'Start a call',
 		processing: 'Processing call…',
 		recorded: 'Has a recording',

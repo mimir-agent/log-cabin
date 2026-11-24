@@ -23,6 +23,7 @@
 		items: NavItem[];
 		currentPath: string;
 		counts?: Record<string, number>;
+		live?: Record<string, string>;
 		/** Where "New post" goes. Hidden when there's nowhere to post. */
 		newPostHref?: string;
 		/** The Favorites group: SidebarLinks for favorite projects, threads and notes. */
@@ -42,6 +43,7 @@
 		items,
 		currentPath,
 		counts = {},
+		live = {},
 		newPostHref,
 		favorites,
 		projects,
@@ -147,6 +149,7 @@
 							current={isCurrent(item.href)}
 							count={counts[item.href]}
 							unread={(counts[item.href] ?? 0) > 0}
+							live={live[item.href]}
 						>
 							{#snippet leading()}
 								{#if item.icon}<Icon name={item.icon} />{/if}

@@ -14,6 +14,7 @@ import type { PageServerLoad } from './$types';
 
 // The calls going on now, then every past call this person can see, or only the ones they were in.
 export const load: PageServerLoad = async (event) => {
+	event.depends('calls:live');
 	const who = requireMember(event);
 	const env = getEnv();
 	const asked = event.url.searchParams.get('filter');
