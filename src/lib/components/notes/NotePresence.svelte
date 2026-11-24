@@ -48,7 +48,7 @@
 		label={s.here}
 	/>
 {:else}
-	<p class={['status', !trouble && 'u:visually-hidden']} role="status" data-status={status}>
+	<p class={trouble ? 'status' : 'u:visually-hidden'} role="status" data-status={status}>
 		{s.status[status]}
 	</p>
 {/if}

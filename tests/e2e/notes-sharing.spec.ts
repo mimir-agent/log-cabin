@@ -3,6 +3,7 @@
 // share it; Cy may only view it, so she has no Share button at all.
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { baseURL, notes, people, type Person } from './fixtures.ts';
+import { liveContext } from './editor.ts';
 
 const viewports = {
 	phone: { width: 390, height: 844 },
@@ -33,3 +34,19 @@ for (const [name, viewport] of Object.entries(viewports)) {
 		});
 	});
 }
+
+test.describe('phone width', () => {
+	test.use({
+		viewport: viewports.phone,
+		isMobile: true,
+		hasTouch: true,
+		...liveContext
+	});
+
+	test('the note does not scroll sideways', async ({ context, page }) => {
+		await open(context, page, 'bo');
+		await expect(page.locator('[role=status][data-status]')).toBeAttached();
+		const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+		expect(scrollWidth, 'the note page’s scrollWidth').toBeLessThanOrEqual(viewports.phone.width);
+	});
+});

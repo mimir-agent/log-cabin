@@ -13,7 +13,7 @@ import {
 } from '@playwright/test';
 import { editor } from '../../src/lib/strings/editor.ts';
 import { posts as postText } from '../../src/lib/strings/posts.ts';
-import { baseURL, crew, people, post, project } from './fixtures.ts';
+import { baseURL, crew, notes, people, post, project } from './fixtures.ts';
 
 const desktop = { viewport: { width: 1280, height: 800 } };
 const keyboardUp = { ...devices['iPhone 13'], viewport: { width: 390, height: 328 } };
@@ -95,8 +95,8 @@ for (const { name, path, box } of surfaces) {
 	test(`${name}: a typed :tada: becomes 🎉 as the second colon is typed`, async ({ browser }) => {
 		const page = await open(browser, desktop, path);
 		await box(page).click();
-		// Slower than a hand would be on a first `:`, which loads the emoji names.
-		await page.keyboard.type('Well done :tada:', { delay: 40 });
+		// Typed at a hand's speed on a fresh page: the first `:name:` converts like the next.
+		await page.keyboard.type('Well done :tada:');
 		await expect(box(page)).toHaveText('Well done 🎉');
 		await page.context().close();
 	});
@@ -175,6 +175,45 @@ test('an org emoji picked from the button is saved as the same text and drawn', 
 	await page.getByRole('button', { name: postText.comments.submit, exact: true }).click();
 	await expect(org).toHaveCount(before + 1);
 	await page.context().close();
+});
+
+test.describe('a live note on a phone', () => {
+	const phone = { ...devices['iPhone 13'], timezoneId: 'UTC' };
+	const path = `/notes/${notes.trip.id}`;
+	const body = (page: Page) => page.getByRole('textbox', { name: /^Write something/ });
+
+	test('the Emoji button opens the picker and the pick lands at the caret', async ({ browser }) => {
+		const page = await open(browser, phone, path);
+		await body(page).tap();
+		await page.keyboard.press('Enter');
+		await page.keyboard.type('ab');
+		await page.keyboard.press('ArrowLeft');
+		await emojiButton(page, body(page)).tap();
+		await expect(page.getByRole('searchbox', { name: postText.picker.search })).toBeVisible();
+		await page.keyboard.type('tada');
+		await picker(page).locator('button.cell').first().tap();
+		await expect(picker(page)).toBeHidden();
+		await expect(body(page)).toContainText('a🎉b');
+		await expect(body(page)).toBeFocused();
+		await page.context().close();
+	});
+
+	test('/emoji then Enter opens a picker that takes typing, and the pick lands at the caret', async ({
+		browser
+	}) => {
+		const page = await open(browser, phone, path);
+		await body(page).tap();
+		await page.keyboard.press('Enter');
+		await page.keyboard.type('b');
+		await page.keyboard.press('ArrowLeft');
+		await page.keyboard.type('/emoji');
+		await page.keyboard.press('Enter');
+		await expect(page.getByRole('searchbox', { name: postText.picker.search })).toBeVisible();
+		await page.keyboard.type('tada');
+		await picker(page).locator('button.cell').first().tap();
+		await expect(body(page)).toContainText('🎉b');
+		await page.context().close();
+	});
 });
 
 test.describe('phone, keyboard up (390 × 328)', () => {

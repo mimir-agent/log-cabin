@@ -117,6 +117,8 @@ export function slashMenu(items: () => SlashItem[]): AnyExtension {
 export function emojiMenu(org: () => OrgEmoji): AnyExtension {
 	return Extension.create({
 		name: 'emojiMenu',
+		// The names are read by a typed `:name:` the first time, so they load with the editor.
+		onCreate: () => void loadEmoji(),
 		addInputRules: () => [
 			new InputRule({
 				find: /(?:^|\s):([^\s:]+):$/,

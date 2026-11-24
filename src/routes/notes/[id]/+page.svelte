@@ -517,8 +517,8 @@
 
 	/* The title, the people line and the summary sit on the text's column, 40rem as the line is
 	   at 16px (an em here would follow each one's own type size); the body is the page's width so
-	   its wide blocks can use it. */
-	.doc > :global(:not(.body)) {
+	   its wide blocks can use it. The visually hidden connection status keeps its own 1px box. */
+	.doc > :global(:not(.body, .u\:visually-hidden)) {
 		inline-size: 100%;
 		max-inline-size: 40rem;
 		margin-inline: auto;

@@ -29,8 +29,8 @@ export function filterEmoji(
 }
 
 /**
- * The standard emoji data, once loaded. It is a separate chunk that only an editor whose
- * person types `:` needs, and typing a whole `:name:` reads it without waiting.
+ * The standard emoji data, once loaded. It is a separate chunk that only an editor with the
+ * `:` list needs; the list loads it when the editor is made, so a typed `:name:` finds it.
  */
 let loaded: PickerSection[] | undefined;
 

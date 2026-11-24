@@ -279,14 +279,13 @@ test.describe('phone, keyboard up (390 × 328)', () => {
 		await page.context().close();
 	});
 
-	test('live note: no toolbar, and the selection menu is on screen after 20 lines', async ({
+	test('live note: no formatting bar, and the selection menu is on screen after 20 lines', async ({
 		browser
 	}) => {
 		const page = await open(browser, keyboardUp, `/notes/${notes.trip.id}`);
 		await type(page, bodyBox(page), 20);
 		await page.keyboard.type('last word');
 		await selectBack(page, 4);
-		await expect(page.locator('.toolbar:not(.bubble)')).toBeHidden();
 		await expectReachable(menuOf(page).getByRole('button', { name: editor.link, exact: true }));
 		await page.context().close();
 	});
@@ -622,9 +621,6 @@ test.describe('phone: no fixed formatting bar on any surface', () => {
 						.map((button) => button.getAttribute('aria-label'))
 				);
 			expect(shown.filter((label) => formatLabels.includes(label!))).toEqual([]);
-			if (surface.name.includes('note')) {
-				await expect(page.locator('.toolbar:not(.bubble)')).toBeHidden();
-			}
 			await page.context().close();
 		});
 	}

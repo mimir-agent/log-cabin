@@ -842,8 +842,8 @@
 {/snippet}
 
 {#snippet toolbar()}
-	{@const inline = formatting && !bubble}
-	{#if inline || uploadUrl || orgEmoji || (formatting && note)}
+	{@const inline = formatting && !bubbled}
+	{#if inline || uploadUrl || orgEmoji}
 		<Toolbar.Root aria-label={text.toolbar}>
 			{#snippet child({ props })}
 				<div {...props} class="toolbar">
@@ -853,7 +853,7 @@
 						{#if inline}<span class="divider" aria-hidden="true"></span>{/if}
 					{/if}
 					{#if inline}{@render formatTools()}{/if}
-					{#if formatting && note}
+					{#if formatting && note && !bubbled}
 						<UiPopover bind:open={timeOpen} label={text.relativeTime.insert}>
 							{#snippet trigger({ props: trigger })}
 								<Toolbar.Button {...trigger} {disabled}>
@@ -1031,7 +1031,7 @@
 		translate: none;
 	}
 
-	/* A phone: one row of 44px targets, and a note's toolbar gives way to the selection menu. */
+	/* A phone: one row of 44px targets. */
 	@media (max-width: 39.99rem) {
 		.bubble {
 			flex-wrap: nowrap;
@@ -1040,10 +1040,6 @@
 		.bubble .tool {
 			min-inline-size: var(--tap-min);
 			block-size: var(--tap-min);
-		}
-
-		.editor[data-note] > :global(.toolbar:not(.bubble)) {
-			display: none;
 		}
 	}
 
