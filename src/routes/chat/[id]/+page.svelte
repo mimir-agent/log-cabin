@@ -122,7 +122,8 @@
 	}
 
 	function pasted(event: ClipboardEvent) {
-		if (closed || typingIn(event.target) || !event.clipboardData) return;
+		// An editor that took the paste has prevented it, whatever the event's target.
+		if (closed || event.defaultPrevented || typingIn(event.target) || !event.clipboardData) return;
 		const text = event.clipboardData.getData('text/plain');
 		if (!event.clipboardData.files.length && !text) return;
 		event.preventDefault();
