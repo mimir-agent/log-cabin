@@ -22,7 +22,9 @@
 	import { nav } from '#lib/nav.js';
 	import { hasRole } from '#lib/roles.js';
 	import type { Role } from '#lib/server/db/schema/index.js';
+	import type { Status } from '#lib/people/status.js';
 	import { shell } from '#lib/strings/shell.js';
+	import AccountMenu from './AccountMenu.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Sidebar from './Sidebar.svelte';
 	import { preloadInView } from '#lib/preload.js';
@@ -31,7 +33,10 @@
 		orgName: string;
 		orgLogoUrl?: string | null;
 		userName: string;
+		username: string;
 		userAvatarUrl?: string | null;
+		/** Your own status, if you have one set. */
+		status: Status | null;
 		role: Role;
 		/** The current path, to mark the current nav item. */
 		currentPath: string;
@@ -54,6 +59,7 @@
 
 	const items = $derived(nav.filter((item) => hasRole(role, item.minRole ?? 'guest')));
 	const tabs = $derived(items.filter((item) => item.tab));
+	const account = $derived(items.filter((item) => item.place === 'account'));
 	const canCreateProject = $derived(hasRole(role, 'member'));
 	let navOpen = $state(false);
 	// Following any link in the drawer closes it.
@@ -125,6 +131,14 @@
 					</span>
 				</a>
 			{/each}
+			<AccountMenu
+				userName={sidebar.userName}
+				username={sidebar.username}
+				avatarUrl={sidebar.userAvatarUrl}
+				status={sidebar.status}
+				items={account}
+				variant="tab"
+			/>
 		</nav>
 	{/if}
 </div>

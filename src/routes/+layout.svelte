@@ -182,7 +182,9 @@
 		orgName={data.orgName ?? core.appName}
 		orgLogoUrl={data.orgLogoUrl}
 		userName={data.user.name}
+		username={data.user.username}
 		userAvatarUrl={data.user.avatarUrl}
+		status={data.myStatus}
 		role={data.member.role}
 		{currentPath}
 		counts={{ '/inbox': unread }}

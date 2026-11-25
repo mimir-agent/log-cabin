@@ -1,6 +1,8 @@
 import { getEnv } from '#lib/server/platform.js';
 import { unreadCount } from '#lib/server/notifications/notify.js';
 import { inboxAbout, itemPath } from '#lib/server/notifications/inbox.js';
+import { getMemberByUserId } from '#lib/server/members.js';
+import { activeStatus } from '#lib/people/status.js';
 import { getOrg } from '#lib/server/org.js';
 import { getObjectUrl } from '#lib/server/storage.js';
 import { sidebarProjects } from '#lib/server/posts/projects.js';
@@ -38,6 +40,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 			people: [],
 			recent: [],
 			about: null,
+			myStatus: null,
 			vapidPublicKey: null
 		};
 	}
@@ -63,7 +66,8 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		people,
 		recent,
 		memberZone,
-		about
+		about,
+		mine
 	] = await Promise.all([
 		getOrg(env),
 		sidebarProjects(env, who),
@@ -78,7 +82,8 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		// Others see this member's local time in it; the page updates it from the browser.
 		timezoneOf(env, user.id),
 		// What the inbox holds about this page, so the page can read it and offer Mark done.
-		inboxAbout(env, user.id, itemPath(url.pathname))
+		inboxAbout(env, user.id, itemPath(url.pathname)),
+		getMemberByUserId(env, user.id)
 	]);
 	// A write, so only when the sidebar found a favorite note this member can no longer see.
 	if (hiddenNotes) await dropUnseenNoteFavorites(env, who);
@@ -104,6 +109,7 @@ export const load: LayoutServerLoad = async ({ locals, url, depends, cookies }) 
 		people,
 		recent,
 		about,
+		myStatus: mine ? activeStatus(mine, Date.now()) : null,
 		vapidPublicKey: env.VAPID_PUBLIC_KEY ?? null
 	};
 };

@@ -30,6 +30,8 @@
 		args: {
 			orgName: 'Northwind Trading',
 			userName: 'Grace Hopper',
+			username: 'grace',
+			status: null,
 			role: 'member',
 			currentPath: '/posts/42',
 			counts: { '/inbox': 3, '/chat': 12 }

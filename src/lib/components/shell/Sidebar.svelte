@@ -2,24 +2,28 @@
 	import type { Snippet } from 'svelte';
 	import { DropdownMenu } from 'bits-ui';
 	import type { NavItem } from '#lib/nav.js';
-	import { auth } from '#lib/strings/auth.js';
 	import { core } from '#lib/strings/core.js';
 	import { posts } from '#lib/strings/posts.js';
 	import { shell } from '#lib/strings/shell.js';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import IconButton from '#lib/components/ui/IconButton.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
+	import AccountMenu from './AccountMenu.svelte';
 	import Avatar from './Avatar.svelte';
 	import CreateMenu from './CreateMenu.svelte';
 	import GroupToggle from './GroupToggle.svelte';
 	import SidebarLink from './SidebarLink.svelte';
 	import { preloadInView } from '#lib/preload.js';
+	import type { Status } from '#lib/people/status.js';
 
 	type Props = {
 		orgName: string;
 		orgLogoUrl?: string | null;
 		userName: string;
+		username: string;
 		userAvatarUrl?: string | null;
+		/** Your own status, if you have one set. */
+		status: Status | null;
 		items: NavItem[];
 		currentPath: string;
 		counts?: Record<string, number>;
@@ -39,7 +43,9 @@
 		orgName,
 		orgLogoUrl,
 		userName,
+		username,
 		userAvatarUrl,
+		status,
 		items,
 		currentPath,
 		counts = {},
@@ -226,30 +232,14 @@
 		{#if userMenu}
 			{@render userMenu()}
 		{:else}
-			<Menu side="top" align="start" minWidth="14rem">
-				{#snippet trigger({ props })}
-					<button {...props} class="me" data-press aria-label={userName}>
-						<Avatar name={userName} src={userAvatarUrl} size="sm" />
-					</button>
-				{/snippet}
-				<DropdownMenu.Group>
-					<DropdownMenu.GroupHeading>{userName}</DropdownMenu.GroupHeading>
-					{#each account as item (item.href)}
-						{@render menuLink(item.href, item.label, item.icon)}
-					{/each}
-				</DropdownMenu.Group>
-				<DropdownMenu.Separator />
-				<form method="POST" action="/logout">
-					<DropdownMenu.Item>
-						{#snippet child({ props })}
-							<button {...props} type="submit">
-								<Icon name="log-out" />
-								{auth.signOut}
-							</button>
-						{/snippet}
-					</DropdownMenu.Item>
-				</form>
-			</Menu>
+			<AccountMenu
+				{userName}
+				{username}
+				avatarUrl={userAvatarUrl}
+				{status}
+				items={account}
+				variant="sidebar"
+			/>
 		{/if}
 	</div>
 </div>
@@ -443,23 +433,6 @@
 		padding: 0.375rem var(--gap-md) var(--gap-md);
 	}
 
-	.me {
-		display: grid;
-		place-items: center;
-		inline-size: var(--control-h-sm);
-		block-size: var(--control-h-sm);
-		padding: 0;
-		border: 0;
-		border-radius: var(--radius-full);
-		background: none;
-		cursor: pointer;
-	}
-
-	.me:hover,
-	.me[data-state='open'] {
-		background-color: var(--hue-fill);
-	}
-
 	.foot :global(form) {
 		display: contents;
 	}
@@ -468,11 +441,6 @@
 		.org,
 		.new-post {
 			min-block-size: var(--tap-min);
-		}
-
-		.me {
-			inline-size: var(--tap-min);
-			block-size: var(--tap-min);
 		}
 	}
 </style>

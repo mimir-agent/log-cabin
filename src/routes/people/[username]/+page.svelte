@@ -17,6 +17,7 @@
 
 	let { data, form }: PageProps = $props();
 	const s = auth.profile;
+	let picking = $state(false);
 	const joined = $derived(
 		new Date(data.member.createdAt).toLocaleDateString(undefined, { timeZone: data.timeZone })
 	);
@@ -48,10 +49,16 @@
 
 	<ProfileHeader person={data.person}>
 		{#snippet statusAction()}
-			{#if data.isSelf}<StatusPicker
+			{#if data.isSelf}
+				<Button variant="ghost" size="sm" onclick={() => (picking = true)}>
+					{data.person.status ? people.status.edit : people.status.set}
+				</Button>
+				<StatusPicker
 					username={data.person.username}
 					status={data.person.status}
-				/>{/if}
+					bind:open={picking}
+				/>
+			{/if}
 		{/snippet}
 		<dl class="facts">
 			<div>

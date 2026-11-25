@@ -1,11 +1,12 @@
 <script lang="ts">
 	// Adapted from Campsite (https://github.com/campsite/campsite), apps/web/components/Home/UpdateStatusDialog.tsx, commit cc14551, modified. Licensed CC BY-NC 4.0: https://creativecommons.org/licenses/by-nc/4.0/
+	import { untrack } from 'svelte';
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import { DropdownMenu } from 'bits-ui';
 	import Button from '#lib/components/ui/Button.svelte';
+	import Dialog from '#lib/components/ui/Dialog.svelte';
 	import Icon from '#lib/components/ui/Icon.svelte';
 	import Menu from '#lib/components/ui/Menu.svelte';
-	import Popover from '#lib/components/ui/Popover.svelte';
 	import SuedeButton from '#lib/components/ui/SuedeButton.svelte';
 	import SettingsField from '#lib/components/settings/SettingsField.svelte';
 	import Banner from '#lib/components/ui/Banner.svelte';
@@ -22,20 +23,24 @@
 		/** Your own username: the picker saves through your profile page. */
 		username: string;
 		status: Status | null;
+		open?: boolean;
 	};
 
-	let { username, status }: Props = $props();
+	let { username, status, open = $bindable(false) }: Props = $props();
 	const s = people.status;
 
-	let open = $state(false);
 	let message = $state('');
 	let emoji = $state('');
 	let text = $state('');
 	let expiry = $state<StatusExpiry>('today');
 	const left = $derived(statusTextMax - [...text].length);
 
-	function reset(isOpen: boolean) {
-		if (!isOpen) return;
+	// Whoever opens the dialog, the form starts from the current status.
+	$effect(() => {
+		if (open) untrack(reset);
+	});
+
+	function reset() {
 		emoji = status?.emoji ?? s.emojiChoices[0];
 		text = status?.text ?? '';
 		expiry = status ? 'never' : 'today';
@@ -56,10 +61,7 @@
 	};
 </script>
 
-<Popover bind:open width="22rem" label={s.title} onOpenChange={reset}>
-	{#snippet trigger({ props })}
-		<Button {...props} variant="ghost" size="sm">{status ? s.edit : s.set}</Button>
-	{/snippet}
+<Dialog bind:open title={s.title} size="sm">
 	<form method="POST" action={action('status')} class="picker" use:enhance={save}>
 		<div class="presets" role="group" aria-label={s.presetsLabel}>
 			{#each statusPresets as preset (preset.text)}
@@ -141,7 +143,7 @@
 			<SuedeButton type="submit">{s.save}</SuedeButton>
 		</div>
 	</form>
-</Popover>
+</Dialog>
 
 <style>
 	.picker {
